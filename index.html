@@ -1050,6 +1050,7 @@
       <input id="roomCode" class="room-code" type="text" placeholder="Room code" aria-label="Room code" />
       <button id="hostBtn" class="host">Host</button>
       <button id="joinBtn" class="join">Join</button>
+      <button id="queueBtn" class="join hidden">Queue Ranked</button>
     </div>
 
     <p class="connection" id="connectionText" aria-live="polite"></p>
@@ -1080,6 +1081,7 @@
     const roomCodeInput = document.getElementById('roomCode');
     const hostBtn = document.getElementById('hostBtn');
     const joinBtn = document.getElementById('joinBtn');
+    const queueBtn = document.getElementById('queueBtn');
     const connectionText = document.getElementById('connectionText');
     const rankedScoreText = document.getElementById('rankedScoreText');
     const losunValue = document.getElementById('losunValue');
@@ -1154,6 +1156,7 @@
     let conn = null;
     let onlineConnected = false;
     let onlineStarterAssigned = false;
+    let rankedQueueing = false;
     let isHost = false;
     let myMark = 'X';
     let opponentName = 'Opponent';
@@ -1445,7 +1448,8 @@
       rankedScore = { x: 0, o: 0 };
       updateRankedScoreUi();
       setActiveScreen('board');
-      updateConnection('Ranked mode: host or join a room. Matchmaking pairs nearby ELO buckets.');
+      updateQueueButtonUi();
+      updateConnection('Ranked mode: tap Queue Ranked to find a same-tier opponent.');
       gameStarted = false;
       resetBoard();
       updateTurnStatus();
@@ -1757,6 +1761,19 @@
 
     function generateRoomCode() {
       return String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+    }
+
+    function rankedQueuePeerId() {
+      const tier = getRankTierByElo(rankedElo);
+      return `${ROOM_ID_PREFIX}ranked-queue-${tier.id}`;
+    }
+
+    function updateQueueButtonUi() {
+      if (gameVariant !== 'ranked') {
+        queueBtn.textContent = 'Queue Ranked';
+        return;
+      }
+      queueBtn.textContent = rankedQueueing ? 'Cancel Queue' : 'Queue Ranked';
     }
 
     function getRankTierByElo(elo) {
@@ -2369,11 +2386,100 @@
       }
       onlineConnected = false;
       onlineStarterAssigned = false;
+      rankedQueueing = false;
       isHost = false;
       opponentName = 'Opponent';
       opponentRankedElo = DEFAULT_RANKED_ELO;
       updateRankedScoreUi();
+      updateQueueButtonUi();
       updateConnection('');
+    }
+
+    function queueRankedGame() {
+      if (gameVariant !== 'ranked') {
+        updateStatus('Ranked queue is only for Ranked mode.');
+        return;
+      }
+      primeAudio();
+
+      if (rankedQueueing) {
+        disconnectOnline();
+        updateConnection('Ranked queue canceled.');
+        updateStatus('Queue canceled.');
+        return;
+      }
+
+      mode = 'online';
+      modeSelect.value = 'online';
+      updateModeUi();
+      disconnectOnline();
+
+      if (typeof Peer === 'undefined') {
+        updateConnection('Online service unavailable right now.');
+        return;
+      }
+
+      const tier = getRankTierByElo(rankedElo);
+      const queueId = rankedQueuePeerId();
+      rankedQueueing = true;
+      updateQueueButtonUi();
+      updateConnection(`Queueing in ${tier.name} (${rankedElo} ELO)...`);
+      updateStatus('Searching for a ranked opponent in your tier...');
+
+      peer = new Peer(queueId);
+      isHost = true;
+      myMark = 'X';
+      peer.on('open', () => {
+        if (!rankedQueueing) {
+          return;
+        }
+        updateConnection(`In queue: ${tier.name}. Waiting for opponent...`);
+      });
+      peer.on('connection', (incoming) => {
+        if (!rankedQueueing) {
+          incoming.close();
+          return;
+        }
+        if (conn && conn.open) {
+          incoming.close();
+          return;
+        }
+        rankedQueueing = false;
+        updateQueueButtonUi();
+        setupConnHandlers(incoming);
+      });
+      peer.on('error', (err) => {
+        if (!rankedQueueing) {
+          return;
+        }
+        if (err && err.type === 'unavailable-id') {
+          try {
+            peer.destroy();
+          } catch (destroyErr) {}
+          peer = new Peer();
+          isHost = false;
+          myMark = 'O';
+          peer.on('open', () => {
+            if (!rankedQueueing) {
+              return;
+            }
+            updateConnection(`Opponent found in ${tier.name}. Connecting...`);
+            const outgoing = peer.connect(queueId, { reliable: true });
+            rankedQueueing = false;
+            updateQueueButtonUi();
+            setupConnHandlers(outgoing);
+          });
+          peer.on('error', () => {
+            rankedQueueing = false;
+            updateQueueButtonUi();
+            updateConnection('Could not join ranked queue. Try Queue Ranked again.');
+          });
+          return;
+        }
+        rankedQueueing = false;
+        updateQueueButtonUi();
+        updateConnection('Ranked queue failed. Try Queue Ranked again.');
+      });
     }
 
     function setupConnHandlers(newConn) {
@@ -2448,12 +2554,16 @@
         onlineConnected = false;
         gameStarted = false;
         setBoardDisabled(true);
-        updateConnection('Disconnected. Host or join again.');
-        updateStatus('Online session ended.');
+        updateConnection(gameVariant === 'ranked' ? 'Disconnected. Tap Queue Ranked to find a new match.' : 'Disconnected. Host or join again.');
+        updateStatus(gameVariant === 'ranked' ? 'Ranked session ended.' : 'Online session ended.');
       });
     }
 
     function hostOnlineGame() {
+      if (gameVariant === 'ranked') {
+        queueRankedGame();
+        return;
+      }
       primeAudio();
       mode = 'online';
       modeSelect.value = 'online';
@@ -2498,6 +2608,10 @@
     }
 
     function joinOnlineGame() {
+      if (gameVariant === 'ranked') {
+        queueRankedGame();
+        return;
+      }
       primeAudio();
       const rankedMode = gameVariant === 'ranked';
       const roomCode = parseRoomCodeInput(roomCodeInput.value, rankedMode);
@@ -2538,7 +2652,7 @@
     function startGame() {
       primeAudio();
       if (gameVariant === 'ranked') {
-        updateStatus('Ranked is real-player only. Use Host or Join.');
+        updateStatus('Ranked is queue-only. Tap Queue Ranked.');
         return;
       }
       if (mode !== 'ai') {
@@ -2594,20 +2708,26 @@
       const ranked = gameVariant === 'ranked';
       const forceOnline = ranked;
       const activeOnline = forceOnline ? true : online;
+      const showRankedQueue = ranked && activeOnline;
 
       if (forceOnline) {
         mode = 'online';
         modeSelect.value = 'online';
       }
       onlineControls.classList.toggle('active', activeOnline);
+      roomCodeInput.classList.toggle('hidden', showRankedQueue);
+      hostBtn.classList.toggle('hidden', showRankedQueue);
+      joinBtn.classList.toggle('hidden', showRankedQueue);
+      queueBtn.classList.toggle('hidden', !showRankedQueue);
       modeSelect.disabled = ranked;
       difficultySelect.disabled = activeOnline || ranked;
       startBtn.disabled = activeOnline;
+      updateQueueButtonUi();
 
       if (activeOnline) {
         onlineStarterAssigned = false;
         updateStatus(ranked
-          ? 'Ranked: host or join a room in your ELO tier.'
+          ? (rankedQueueing ? 'Searching for same-tier opponent...' : 'Tap Queue Ranked to find an opponent.')
           : 'Create or join a room to start online 1v1.');
         setBoardDisabled(true);
       } else {
@@ -2713,6 +2833,7 @@
     resetBtn.addEventListener('click', manualNewGame);
     hostBtn.addEventListener('click', hostOnlineGame);
     joinBtn.addEventListener('click', joinOnlineGame);
+    queueBtn.addEventListener('click', queueRankedGame);
     playMenuBtn.addEventListener('click', openBoardScreen);
     rankedMenuBtn.addEventListener('click', openRankedScreen);
     shopMenuBtn.addEventListener('click', openShopScreen);
