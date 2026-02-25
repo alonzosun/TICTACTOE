@@ -89,6 +89,63 @@
       font-weight: 700;
     }
 
+    .shop-wallet {
+      margin: 0 0 10px;
+      text-align: center;
+      font-weight: 800;
+      font-size: 0.9rem;
+    }
+
+    .shop-grid {
+      display: grid;
+      gap: 10px;
+      margin: 0 0 14px;
+    }
+
+    .shop-item {
+      border: 2px solid var(--line);
+      border-radius: 12px;
+      background: var(--paper);
+      padding: 10px;
+    }
+
+    .shop-item-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+      align-items: center;
+    }
+
+    .shop-item-name {
+      font-weight: 800;
+      font-size: 1rem;
+    }
+
+    .shop-item-price {
+      font-weight: 800;
+      font-size: 0.86rem;
+      opacity: 0.9;
+    }
+
+    .shop-item-desc {
+      margin: 0 0 8px;
+      font-size: 0.86rem;
+      font-weight: 700;
+      opacity: 0.86;
+    }
+
+    .shop-item button {
+      width: 100%;
+    }
+
+    .shop-item button[disabled] {
+      opacity: 0.72;
+      cursor: default;
+      transform: none;
+      box-shadow: 0 2px 0 rgba(75, 49, 35, 0.2);
+    }
+
     h1 {
       margin: 0 0 12px;
       text-align: center;
@@ -304,6 +361,51 @@
       border-color: var(--accent);
     }
 
+    .board.effect-ember {
+      box-shadow:
+        0 0 0 2px rgba(255, 169, 76, 0.45),
+        0 0 22px rgba(255, 124, 54, 0.6),
+        inset 0 2px 0 rgba(255, 214, 158, 0.35),
+        inset 0 -2px 0 rgba(66, 37, 21, 0.35),
+        0 8px 18px rgba(73, 44, 25, 0.26);
+      animation: effect-ember 850ms ease-out;
+    }
+
+    .board.effect-aurora {
+      box-shadow:
+        0 0 0 2px rgba(96, 219, 255, 0.5),
+        0 0 30px rgba(129, 92, 255, 0.44),
+        inset 0 2px 0 rgba(255, 214, 158, 0.35),
+        inset 0 -2px 0 rgba(66, 37, 21, 0.35),
+        0 8px 18px rgba(73, 44, 25, 0.26);
+      animation: effect-aurora 900ms ease-out;
+    }
+
+    .board.effect-meteor {
+      box-shadow:
+        0 0 0 2px rgba(255, 229, 104, 0.5),
+        0 0 34px rgba(255, 177, 62, 0.62),
+        inset 0 2px 0 rgba(255, 214, 158, 0.35),
+        inset 0 -2px 0 rgba(66, 37, 21, 0.35),
+        0 8px 18px rgba(73, 44, 25, 0.26);
+      animation: effect-meteor 950ms cubic-bezier(0.2, 0.74, 0.2, 1.2);
+    }
+
+    .win-particle {
+      position: absolute;
+      left: var(--x, 50%);
+      top: var(--y, 50%);
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--c, #fff);
+      pointer-events: none;
+      opacity: 0.95;
+      transform: translate(-50%, -50%);
+      animation: particle-burst 900ms ease-out forwards;
+      z-index: 5;
+    }
+
     .fall {
       animation: fall-away 900ms cubic-bezier(0.25, 0.8, 0.2, 1) forwards;
       animation-delay: var(--delay, 0ms);
@@ -317,6 +419,35 @@
       }
       100% {
         transform: translateY(190px) rotate(var(--spin, 60deg));
+        opacity: 0;
+      }
+    }
+
+    @keyframes effect-ember {
+      0% { transform: scale(1); }
+      35% { transform: scale(1.02); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes effect-aurora {
+      0% { filter: hue-rotate(0deg); transform: scale(1); }
+      50% { filter: hue-rotate(40deg); transform: scale(1.015); }
+      100% { filter: hue-rotate(0deg); transform: scale(1); }
+    }
+
+    @keyframes effect-meteor {
+      0% { transform: scale(1); }
+      30% { transform: scale(1.028); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes particle-burst {
+      0% {
+        transform: translate(-50%, -50%) scale(0.2);
+        opacity: 0.95;
+      }
+      100% {
+        transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, -80px))) scale(0.1);
         opacity: 0;
       }
     }
@@ -429,7 +560,9 @@
 
   <section class="game hidden" id="shopScreen" aria-label="Shop screen">
     <h1>Shop</h1>
-    <p class="shop-note">Shop coming soon.</p>
+    <p class="shop-wallet">Losun Balance: <span id="shopLosunValue">0</span></p>
+    <p class="shop-note">Buy and equip win animations for AI + Online 1v1 wins.</p>
+    <div id="shopItems" class="shop-grid" aria-label="Win animation items"></div>
     <div class="controls">
       <button id="shopBackBtn" class="start">Back</button>
     </div>
@@ -526,6 +659,7 @@
     const menuScreen = document.getElementById('menuScreen');
     const boardScreen = document.getElementById('boardScreen');
     const shopScreen = document.getElementById('shopScreen');
+    const boardElement = document.querySelector('.board');
     const statsScreen = document.getElementById('statsScreen');
     const playMenuBtn = document.getElementById('playMenuBtn');
     const shopMenuBtn = document.getElementById('shopMenuBtn');
@@ -540,6 +674,8 @@
     const winsCount = document.getElementById('winsCount');
     const lossesCount = document.getElementById('lossesCount');
     const drawsCount = document.getElementById('drawsCount');
+    const shopLosunValue = document.getElementById('shopLosunValue');
+    const shopItems = document.getElementById('shopItems');
     const adminPanel = document.getElementById('adminPanel');
     const adminPassInput = document.getElementById('adminPassInput');
     const adminUnlockBtn = document.getElementById('adminUnlockBtn');
@@ -550,8 +686,16 @@
 
     const LOSUN_STORAGE_KEY = 'alons_tic_losun';
     const PROFILE_STORAGE_KEY = 'alons_tic_profile';
+    const SHOP_STORAGE_KEY = 'alons_tic_shop';
     const ROOM_ID_PREFIX = 'tictac-';
     const OWNER_ADMIN_CODE = 'alonzosun';
+
+    const WIN_ANIMATIONS = [
+      { id: 'classic', name: 'Classic Cheer', cost: 0, description: 'Default win celebration.' },
+      { id: 'ember', name: 'Ember Burst', cost: 120, description: 'Warm orange sparks and glow.' },
+      { id: 'aurora', name: 'Aurora Wave', cost: 180, description: 'Cool cyan-purple pulse wave.' },
+      { id: 'meteor', name: 'Meteor Storm', cost: 260, description: 'Golden blast with heavy impact.' }
+    ];
 
     const wins = [
       [0, 1, 2],
@@ -585,9 +729,11 @@
     let myMark = 'X';
     let losun = 0;
     let profile = { username: 'Player', games: 0, wins: 0, losses: 0, draws: 0 };
+    let shopState = { owned: { classic: true }, equipped: 'classic' };
     let adminUnlocked = false;
     let statsTapCount = 0;
     let lastStatsTapAt = 0;
+    let winEffectTimer = null;
 
     function updateStatus(message) {
       statusText.textContent = message;
@@ -743,6 +889,7 @@
 
     function openShopScreen() {
       setActiveScreen('shop');
+      renderShopItems();
     }
 
     function openStatsScreen() {
@@ -764,6 +911,8 @@
 
     function updateLosunUi() {
       losunValue.textContent = String(losun);
+      shopLosunValue.textContent = String(losun);
+      renderShopItems();
     }
 
     function saveLosun() {
@@ -781,6 +930,150 @@
         losun = 0;
       }
       updateLosunUi();
+    }
+
+    function hasOwnedAnimation(id) {
+      return Boolean(shopState.owned[id]);
+    }
+
+    function saveShopState() {
+      try {
+        localStorage.setItem(SHOP_STORAGE_KEY, JSON.stringify(shopState));
+      } catch (err) {}
+      renderShopItems();
+    }
+
+    function loadShopState() {
+      try {
+        const rawValue = localStorage.getItem(SHOP_STORAGE_KEY);
+        const parsed = rawValue ? JSON.parse(rawValue) : null;
+        if (parsed && typeof parsed === 'object') {
+          const owned = { classic: true };
+          Object.keys(parsed.owned || {}).forEach((id) => {
+            if (parsed.owned[id]) {
+              owned[id] = true;
+            }
+          });
+          const equipped = typeof parsed.equipped === 'string' ? parsed.equipped : 'classic';
+          shopState = {
+            owned,
+            equipped: owned[equipped] ? equipped : 'classic'
+          };
+        }
+      } catch (err) {
+        shopState = { owned: { classic: true }, equipped: 'classic' };
+      }
+      renderShopItems();
+    }
+
+    function buyAnimation(id) {
+      const item = WIN_ANIMATIONS.find((animation) => animation.id === id);
+      if (!item || hasOwnedAnimation(id)) {
+        return;
+      }
+      if (!spendLosun(item.cost)) {
+        updateConnection('Not enough Losun for this animation.');
+        return;
+      }
+      shopState.owned[id] = true;
+      shopState.equipped = id;
+      saveShopState();
+      updateConnection(`Bought and equipped ${item.name}.`);
+    }
+
+    function equipAnimation(id) {
+      const item = WIN_ANIMATIONS.find((animation) => animation.id === id);
+      if (!item || !hasOwnedAnimation(id)) {
+        return;
+      }
+      shopState.equipped = id;
+      saveShopState();
+      updateConnection(`Equipped ${item.name}.`);
+    }
+
+    function renderShopItems() {
+      if (!shopItems) {
+        return;
+      }
+
+      shopItems.innerHTML = '';
+      WIN_ANIMATIONS.forEach((item) => {
+        const owned = hasOwnedAnimation(item.id);
+        const equipped = shopState.equipped === item.id;
+        const actionLabel = owned ? (equipped ? 'Equipped' : 'Equip') : `Buy ${item.cost} Losun`;
+        const actionClass = owned && equipped ? 'start' : (owned ? 'start' : 'reset');
+        const actionType = owned ? 'equip' : 'buy';
+        const disabled = equipped ? 'disabled' : '';
+
+        const card = document.createElement('article');
+        card.className = 'shop-item';
+        card.innerHTML = `
+          <div class="shop-item-head">
+            <span class="shop-item-name">${item.name}</span>
+            <span class="shop-item-price">${item.cost === 0 ? 'Free' : `${item.cost} Losun`}</span>
+          </div>
+          <p class="shop-item-desc">${item.description}</p>
+          <button class="${actionClass}" data-action="${actionType}" data-item-id="${item.id}" ${disabled}>${actionLabel}</button>
+        `;
+        shopItems.appendChild(card);
+      });
+    }
+
+    function handleShopClick(event) {
+      const actionButton = event.target.closest('button[data-action]');
+      if (!actionButton) {
+        return;
+      }
+      const itemId = actionButton.dataset.itemId;
+      if (actionButton.dataset.action === 'buy') {
+        buyAnimation(itemId);
+      } else {
+        equipAnimation(itemId);
+      }
+    }
+
+    function clearBoardWinEffects() {
+      boardElement.classList.remove('effect-ember', 'effect-aurora', 'effect-meteor');
+      boardElement.querySelectorAll('.win-particle').forEach((particle) => particle.remove());
+      if (winEffectTimer) {
+        clearTimeout(winEffectTimer);
+        winEffectTimer = null;
+      }
+    }
+
+    function spawnWinParticles(colors, count) {
+      for (let i = 0; i < count; i += 1) {
+        const particle = document.createElement('span');
+        particle.className = 'win-particle';
+        particle.style.setProperty('--x', `${8 + Math.random() * 84}%`);
+        particle.style.setProperty('--y', `${10 + Math.random() * 78}%`);
+        particle.style.setProperty('--dx', `${-90 + Math.random() * 180}px`);
+        particle.style.setProperty('--dy', `${-130 + Math.random() * 75}px`);
+        particle.style.setProperty('--c', colors[Math.floor(Math.random() * colors.length)]);
+        boardElement.appendChild(particle);
+      }
+    }
+
+    function triggerEquippedWinAnimation() {
+      clearBoardWinEffects();
+      const equipped = shopState.equipped || 'classic';
+
+      if (equipped === 'ember') {
+        boardElement.classList.add('effect-ember');
+        spawnWinParticles(['#ffb566', '#ff7c57', '#ffd67a'], 24);
+      } else if (equipped === 'aurora') {
+        boardElement.classList.add('effect-aurora');
+        spawnWinParticles(['#89f5ff', '#9ea8ff', '#5ff0bf'], 26);
+      } else if (equipped === 'meteor') {
+        boardElement.classList.add('effect-meteor');
+        spawnWinParticles(['#ffd35e', '#ffaf4d', '#fff2b5'], 32);
+      } else {
+        return;
+      }
+
+      winEffectTimer = setTimeout(() => {
+        clearBoardWinEffects();
+      }, 950);
     }
 
     function generateRoomCode() {
@@ -1094,6 +1387,7 @@
         recordMatchResult(result, won);
       }
       if (won) {
+        triggerEquippedWinAnimation();
         if (mode === 'online') {
           addLosun(10);
           updateStatus('You win! +10 Losun');
@@ -1180,6 +1474,7 @@
     }
 
     function resetBoard() {
+      clearBoardWinEffects();
       clearPendingAiMove();
       board = Array(9).fill('');
       player = 'X';
@@ -1482,6 +1777,7 @@
     shopBackBtn.addEventListener('click', openMenuScreen);
     statsBackBtn.addEventListener('click', openMenuScreen);
     menuBtn.addEventListener('click', openMenuScreen);
+    shopItems.addEventListener('click', handleShopClick);
     statsTitle.addEventListener('click', handleStatsTitleTap);
     saveProfileBtn.addEventListener('click', saveUsernameFromInput);
     adminUnlockBtn.addEventListener('click', unlockAdmin);
@@ -1512,6 +1808,7 @@
     updateConnection('');
     loadProfile();
     loadLosun();
+    loadShopState();
     updateAdminUi();
     window.spendLosun = spendLosun;
     setActiveScreen('menu');
