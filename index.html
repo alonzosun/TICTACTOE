@@ -342,6 +342,32 @@
         inset 0 2px 0 rgba(255, 214, 158, 0.35),
         inset 0 -2px 0 rgba(66, 37, 21, 0.35),
         0 8px 18px rgba(73, 44, 25, 0.26);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .board.cracked::before,
+    .board.cracked::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 7;
+      opacity: 0;
+      background:
+        linear-gradient(73deg, transparent 39%, rgba(47, 20, 8, 0.56) 40%, rgba(47, 20, 8, 0.2) 41%, transparent 42%),
+        linear-gradient(24deg, transparent 54%, rgba(47, 20, 8, 0.6) 55%, rgba(47, 20, 8, 0.18) 56%, transparent 57%),
+        linear-gradient(128deg, transparent 63%, rgba(47, 20, 8, 0.55) 64%, rgba(47, 20, 8, 0.16) 65%, transparent 66%);
+      mix-blend-mode: multiply;
+      animation: crack-reveal 520ms ease-out forwards;
+    }
+
+    .board.cracked::after {
+      background:
+        radial-gradient(circle at 50% 66%, rgba(45, 16, 6, 0.55), transparent 36%),
+        linear-gradient(110deg, transparent 46%, rgba(45, 16, 6, 0.5) 47%, rgba(45, 16, 6, 0.14) 48%, transparent 49%),
+        linear-gradient(22deg, transparent 37%, rgba(45, 16, 6, 0.5) 38%, rgba(45, 16, 6, 0.14) 39%, transparent 40%);
+      animation-delay: 120ms;
     }
 
     .cell {
@@ -806,6 +832,17 @@
       100% {
         transform: translate(var(--dx, 0px), var(--dy, 210px)) rotate(var(--spin, 180deg)) scale(var(--scale, 0.45));
         opacity: 0;
+      }
+    }
+
+    @keyframes crack-reveal {
+      0% {
+        opacity: 0;
+        transform: scale(0.96);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1);
       }
     }
 
@@ -1432,7 +1469,7 @@
     }
 
     function clearBoardWinEffects() {
-      boardElement.classList.remove('effect-classic', 'effect-ember', 'effect-aurora', 'effect-meteor');
+      boardElement.classList.remove('effect-classic', 'effect-ember', 'effect-aurora', 'effect-meteor', 'cracked');
       boardElement.querySelectorAll('.win-particle, .win-glint, .ember-spark, .smoke-puff, .aurora-ribbon, .aurora-star, .meteor, .meteor-impact, .mega-meteor, .impact-flash').forEach((node) => node.remove());
       if (winEffectTimer) {
         clearTimeout(winEffectTimer);
@@ -1532,6 +1569,13 @@
       boardElement.appendChild(flash);
     }
 
+    function playMeteorImpactExplosion() {
+      playTone(52, 0.34, 'sawtooth', 0.2, 0);
+      playTone(39, 0.48, 'square', 0.14, 0.03);
+      playTone(96, 0.12, 'triangle', 0.1, 0.02);
+      playTone(72, 0.18, 'triangle', 0.08, 0.14);
+    }
+
     function spawnClassicGlints(count) {
       for (let i = 0; i < count; i += 1) {
         const glint = document.createElement('span');
@@ -1568,6 +1612,10 @@
         spawnMeteors(2);
         spawnMeteorImpacts(12);
         spawnWinParticles(['#ffd35e', '#ffaf4d', '#fff2b5'], 26);
+        setTimeout(() => {
+          boardElement.classList.add('cracked');
+          playMeteorImpactExplosion();
+        }, 1080);
       } else {
         return;
       }
@@ -1897,9 +1945,10 @@
         recordMatchResult(result, won);
       }
       if (won) {
+        const meteorWin = shopState.equipped === 'meteor';
         triggerWinScoreEffect();
         triggerEquippedWinAnimation();
-        shouldMeteorShatter = shopState.equipped === 'meteor';
+        shouldMeteorShatter = meteorWin;
         if (mode === 'online') {
           addLosun(10);
           updateStatus('You win! +10 Losun');
@@ -1907,6 +1956,12 @@
           updateStatus('You win! No Losun in VS AI.');
         }
         playWinCheer();
+        if (meteorWin) {
+          setTimeout(() => {
+            animatePiecesFallAndRestart();
+          }, 1260);
+          return;
+        }
       } else {
         updateStatus(mode === 'online' ? 'You lose!' : 'AI wins!');
         playLoseHonk();
