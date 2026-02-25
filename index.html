@@ -70,6 +70,13 @@
       font-weight: 700;
     }
 
+    .wallet {
+      margin: 0 0 12px;
+      text-align: center;
+      font-weight: 800;
+      font-size: 0.98rem;
+    }
+
     h1 {
       margin: 0 0 12px;
       text-align: center;
@@ -282,6 +289,7 @@
 <body>
   <section class="game" id="menuScreen" aria-label="Main menu">
     <h1>Alons Tic Tac</h1>
+    <p class="wallet" aria-live="polite">Losun: <span id="losunValue">0</span></p>
     <div class="menu-actions">
       <button id="playMenuBtn" class="menu-btn">Play</button>
       <button id="shopMenuBtn" class="menu-btn">Shop</button>
@@ -361,6 +369,9 @@
     const shopMenuBtn = document.getElementById('shopMenuBtn');
     const shopBackBtn = document.getElementById('shopBackBtn');
     const menuBtn = document.getElementById('menuBtn');
+    const losunValue = document.getElementById('losunValue');
+
+    const LOSUN_STORAGE_KEY = 'alons_tic_losun';
 
     const wins = [
       [0, 1, 2],
@@ -392,6 +403,7 @@
     let onlineConnected = false;
     let isHost = false;
     let myMark = 'X';
+    let losun = 0;
 
     function updateStatus(message) {
       statusText.textContent = message;
@@ -399,6 +411,48 @@
 
     function updateConnection(message) {
       connectionText.textContent = message;
+    }
+
+    function updateLosunUi() {
+      losunValue.textContent = String(losun);
+    }
+
+    function saveLosun() {
+      try {
+        localStorage.setItem(LOSUN_STORAGE_KEY, String(losun));
+      } catch (err) {}
+    }
+
+    function loadLosun() {
+      try {
+        const rawValue = localStorage.getItem(LOSUN_STORAGE_KEY);
+        const parsed = Number(rawValue);
+        losun = Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0;
+      } catch (err) {
+        losun = 0;
+      }
+      updateLosunUi();
+    }
+
+    function addLosun(amount) {
+      const value = Math.max(0, Math.floor(amount));
+      if (!value) {
+        return;
+      }
+      losun += value;
+      saveLosun();
+      updateLosunUi();
+    }
+
+    function spendLosun(amount) {
+      const value = Math.max(0, Math.floor(amount));
+      if (!value || losun < value) {
+        return false;
+      }
+      losun -= value;
+      saveLosun();
+      updateLosunUi();
+      return true;
     }
 
     function setActiveScreen(screen) {
@@ -710,7 +764,8 @@
 
       const won = mode === 'online' ? result === myMark : result === 'X';
       if (won) {
-        updateStatus('You win!');
+        addLosun(10);
+        updateStatus('You win! +10 Losun');
         playWinCheer();
       } else {
         updateStatus(mode === 'online' ? 'You lose!' : 'AI wins!');
@@ -1103,6 +1158,8 @@
     document.addEventListener('touchstart', unlockAudio, { passive: true });
 
     updateConnection('');
+    loadLosun();
+    window.spendLosun = spendLosun;
     setActiveScreen('menu');
     updateModeUi();
     refreshSelectedCell();
