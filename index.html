@@ -260,7 +260,7 @@
     </div>
 
     <div class="online" id="onlineControls">
-      <input id="roomCode" class="room-code" type="text" placeholder="Room code" aria-label="Room code" />
+      <input id="roomCode" class="room-code" type="text" inputmode="numeric" maxlength="4" placeholder="4-digit code" aria-label="Room code" />
       <button id="hostBtn" class="host">Host</button>
       <button id="joinBtn" class="join">Join</button>
     </div>
@@ -775,10 +775,12 @@
         return;
       }
 
-      peer = new Peer();
+      const hostCode = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+      roomCodeInput.value = hostCode;
+      peer = new Peer(hostCode);
       peer.on('open', (id) => {
         roomCodeInput.value = id;
-        updateConnection('Room ready. Share this code and wait for opponent.');
+        updateConnection('Room ready. Share this 4-digit code and wait for opponent.');
       });
       peer.on('connection', (incoming) => {
         if (conn && conn.open) {
@@ -795,8 +797,8 @@
     function joinOnlineGame() {
       primeAudio();
       const roomCode = roomCodeInput.value.trim();
-      if (!roomCode) {
-        updateConnection('Enter a room code first.');
+      if (!/^\d{4}$/.test(roomCode)) {
+        updateConnection('Enter a valid 4-digit room code.');
         return;
       }
 
@@ -984,6 +986,9 @@
     });
 
     modeSelect.addEventListener('change', updateModeUi);
+    roomCodeInput.addEventListener('input', () => {
+      roomCodeInput.value = roomCodeInput.value.replace(/\D/g, '').slice(0, 4);
+    });
     document.addEventListener('keydown', handleKeyboard);
     document.addEventListener('pointerdown', unlockAudio, { passive: true });
     document.addEventListener('touchstart', unlockAudio, { passive: true });
