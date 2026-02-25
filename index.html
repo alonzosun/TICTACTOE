@@ -324,7 +324,7 @@
 
     .board {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(var(--board-size, 3), 1fr);
       gap: 10px;
       margin-bottom: 16px;
       padding: 12px;
@@ -915,6 +915,14 @@
       min-height: 1.4em;
     }
 
+    .ranked-score {
+      margin: 0 0 10px;
+      text-align: center;
+      font-size: 0.95rem;
+      min-height: 1.3em;
+      font-weight: 800;
+    }
+
     @keyframes card-rise {
       from {
         opacity: 0;
@@ -975,6 +983,7 @@
     <p class="wallet" aria-live="polite">Losun: <span id="losunValue">0</span></p>
     <div class="menu-actions">
       <button id="playMenuBtn" class="menu-btn">Play</button>
+      <button id="rankedMenuBtn" class="menu-btn">Ranked</button>
       <button id="shopMenuBtn" class="menu-btn">Shop</button>
       <button id="statsMenuBtn" class="menu-btn">Stats</button>
     </div>
@@ -1045,19 +1054,10 @@
 
     <p class="connection" id="connectionText" aria-live="polite"></p>
     <p class="status" id="status" aria-live="polite"></p>
+    <p class="ranked-score hidden" id="rankedScoreText" aria-live="polite"></p>
     <p class="score-effect" id="scoreEffect" aria-live="polite"></p>
 
-    <section class="board" aria-label="Game board">
-      <button class="cell" data-index="0" aria-label="Cell 1"></button>
-      <button class="cell" data-index="1" aria-label="Cell 2"></button>
-      <button class="cell" data-index="2" aria-label="Cell 3"></button>
-      <button class="cell" data-index="3" aria-label="Cell 4"></button>
-      <button class="cell" data-index="4" aria-label="Cell 5"></button>
-      <button class="cell" data-index="5" aria-label="Cell 6"></button>
-      <button class="cell" data-index="6" aria-label="Cell 7"></button>
-      <button class="cell" data-index="7" aria-label="Cell 8"></button>
-      <button class="cell" data-index="8" aria-label="Cell 9"></button>
-    </section>
+    <section class="board" aria-label="Game board"></section>
 
     <div class="controls">
       <button class="reset" id="resetBtn">New Game</button>
@@ -1069,7 +1069,7 @@
 
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script>
-    const cells = Array.from(document.querySelectorAll('.cell'));
+    let cells = [];
     const statusText = document.getElementById('status');
     const scoreEffectText = document.getElementById('scoreEffect');
     const resetBtn = document.getElementById('resetBtn');
@@ -1081,6 +1081,7 @@
     const hostBtn = document.getElementById('hostBtn');
     const joinBtn = document.getElementById('joinBtn');
     const connectionText = document.getElementById('connectionText');
+    const rankedScoreText = document.getElementById('rankedScoreText');
     const losunValue = document.getElementById('losunValue');
     const menuScreen = document.getElementById('menuScreen');
     const boardScreen = document.getElementById('boardScreen');
@@ -1088,6 +1089,7 @@
     const boardElement = document.querySelector('.board');
     const statsScreen = document.getElementById('statsScreen');
     const playMenuBtn = document.getElementById('playMenuBtn');
+    const rankedMenuBtn = document.getElementById('rankedMenuBtn');
     const shopMenuBtn = document.getElementById('shopMenuBtn');
     const statsMenuBtn = document.getElementById('statsMenuBtn');
     const shopBackBtn = document.getElementById('shopBackBtn');
@@ -1123,18 +1125,14 @@
       { id: 'meteor', name: 'Meteor Shower', cost: 260, description: 'Meteors fall onto the board with glowing trails.' }
     ];
 
-    const wins = [
-      [0, 1, 2],
-      [3, 4, 5],
-      [6, 7, 8],
-      [0, 3, 6],
-      [1, 4, 7],
-      [2, 5, 8],
-      [0, 4, 8],
-      [2, 4, 6]
-    ];
+    let boardSize = 3;
+    let winLength = 3;
+    let winningLines = [];
+    let gameVariant = 'classic';
+    let rankedScore = { x: 0, o: 0 };
+    const rankedTargetWins = 3;
 
-    let board = Array(9).fill('');
+    let board = Array(boardSize * boardSize).fill('');
     let player = 'X';
     let gameOver = false;
     let gameStarted = false;
@@ -1170,6 +1168,94 @@
 
     function updateConnection(message) {
       connectionText.textContent = message;
+    }
+
+    function buildWinningLines(size, length) {
+      const lines = [];
+      for (let row = 0; row < size; row += 1) {
+        for (let col = 0; col <= size - length; col += 1) {
+          const line = [];
+          for (let i = 0; i < length; i += 1) {
+            line.push(row * size + (col + i));
+          }
+          lines.push(line);
+        }
+      }
+
+      for (let col = 0; col < size; col += 1) {
+        for (let row = 0; row <= size - length; row += 1) {
+          const line = [];
+          for (let i = 0; i < length; i += 1) {
+            line.push((row + i) * size + col);
+          }
+          lines.push(line);
+        }
+      }
+
+      for (let row = 0; row <= size - length; row += 1) {
+        for (let col = 0; col <= size - length; col += 1) {
+          const line = [];
+          for (let i = 0; i < length; i += 1) {
+            line.push((row + i) * size + (col + i));
+          }
+          lines.push(line);
+        }
+      }
+
+      for (let row = 0; row <= size - length; row += 1) {
+        for (let col = length - 1; col < size; col += 1) {
+          const line = [];
+          for (let i = 0; i < length; i += 1) {
+            line.push((row + i) * size + (col - i));
+          }
+          lines.push(line);
+        }
+      }
+
+      return lines;
+    }
+
+    function updateRankedScoreUi() {
+      const rankedMode = gameVariant === 'ranked';
+      rankedScoreText.classList.toggle('hidden', !rankedMode);
+      if (!rankedMode) {
+        rankedScoreText.textContent = '';
+        return;
+      }
+      rankedScoreText.textContent = `Ranked First to ${rankedTargetWins}  |  You ${rankedScore.x} - ${rankedScore.o} AI`;
+    }
+
+    function renderBoardCells() {
+      boardElement.innerHTML = '';
+      boardElement.style.setProperty('--board-size', String(boardSize));
+      cells = [];
+      const total = boardSize * boardSize;
+      for (let i = 0; i < total; i += 1) {
+        const cell = document.createElement('button');
+        cell.className = 'cell';
+        cell.dataset.index = String(i);
+        cell.setAttribute('aria-label', `Cell ${i + 1}`);
+        cell.addEventListener('click', onCellClick);
+        boardElement.appendChild(cell);
+        cells.push(cell);
+      }
+      refreshSelectedCell();
+    }
+
+    function setVariant(variant) {
+      gameVariant = variant;
+      if (variant === 'ranked') {
+        boardSize = 5;
+        winLength = 4;
+      } else {
+        boardSize = 3;
+        winLength = 3;
+      }
+      winningLines = buildWinningLines(boardSize, winLength);
+      board = Array(boardSize * boardSize).fill('');
+      selectedIndex = 0;
+      renderBoardCells();
+      updateRankedScoreUi();
     }
 
     function clearScoreEffect() {
@@ -1331,8 +1417,31 @@
     }
 
     function openBoardScreen() {
+      setVariant('classic');
       setActiveScreen('board');
       updateModeUi();
+    }
+
+    function openRankedScreen() {
+      setVariant('ranked');
+      mode = 'ai';
+      modeSelect.value = 'ai';
+      modeSelect.disabled = true;
+      difficulty = 'hard';
+      difficultySelect.value = 'hard';
+      onlineControls.classList.remove('active');
+      difficultySelect.disabled = true;
+      startBtn.disabled = false;
+      rankedScore = { x: 0, o: 0 };
+      updateRankedScoreUi();
+      setActiveScreen('board');
+      updateConnection('Ranked mode: Connect 4 on 5x5, first to 3 rounds.');
+      gameStarted = true;
+      gameOver = false;
+      resetBoard();
+      player = 'X';
+      updateTurnStatus();
+      setBoardDisabled(false);
     }
 
     function openShopScreen() {
@@ -1681,7 +1790,7 @@
     }
 
     function setSelectedIndex(index) {
-      selectedIndex = Math.max(0, Math.min(8, index));
+      selectedIndex = Math.max(0, Math.min(board.length - 1, index));
       refreshSelectedCell();
     }
 
@@ -1769,20 +1878,21 @@
     }
 
     function winnerForBoard(currentBoard) {
-      for (const [a, b, c] of wins) {
-        if (currentBoard[a] && currentBoard[a] === currentBoard[b] && currentBoard[b] === currentBoard[c]) {
-          return currentBoard[a];
+      for (const line of winningLines) {
+        const first = line[0];
+        if (currentBoard[first] && line.every((idx) => currentBoard[idx] === currentBoard[first])) {
+          return currentBoard[first];
         }
       }
       return getEmptyIndices(currentBoard).length === 0 ? 'draw' : null;
     }
 
     function checkWinner() {
-      for (const combo of wins) {
-        const [a, b, c] = combo;
-        if (board[a] && board[a] === board[b] && board[b] === board[c]) {
+      for (const combo of winningLines) {
+        const first = combo[0];
+        if (board[first] && combo.every((index) => board[index] === board[first])) {
           combo.forEach((index) => cells[index].classList.add('winner'));
-          return board[a];
+          return board[first];
         }
       }
 
@@ -1790,6 +1900,41 @@
         return 'draw';
       }
       return null;
+    }
+
+    function pickRankedAiMove() {
+      const empty = getEmptyIndices(board);
+      const tryMove = (mark) => {
+        for (const idx of empty) {
+          const simulated = [...board];
+          simulated[idx] = mark;
+          if (winnerForBoard(simulated) === mark) {
+            return idx;
+          }
+        }
+        return null;
+      };
+
+      const winNow = tryMove('O');
+      if (typeof winNow === 'number') {
+        return winNow;
+      }
+      const blockNow = tryMove('X');
+      if (typeof blockNow === 'number') {
+        return blockNow;
+      }
+
+      const center = (boardSize - 1) / 2;
+      const prioritized = [...empty].sort((a, b) => {
+        const ax = a % boardSize;
+        const ay = Math.floor(a / boardSize);
+        const bx = b % boardSize;
+        const by = Math.floor(b / boardSize);
+        const ad = Math.abs(ax - center) + Math.abs(ay - center);
+        const bd = Math.abs(bx - center) + Math.abs(by - center);
+        return ad - bd;
+      });
+      return prioritized[0];
     }
 
     function setBoardDisabled(disabled) {
@@ -1851,6 +1996,10 @@
     }
 
     function pickAiMove() {
+      if (gameVariant === 'ranked') {
+        return pickRankedAiMove();
+      }
+
       if (difficulty === 'easy') {
         return pickRandomMove();
       }
@@ -1890,6 +2039,10 @@
       }
 
       if (gameOver) {
+        return;
+      }
+      if (gameVariant === 'ranked') {
+        updateStatus(player === 'X' ? 'Ranked: your turn (X)' : 'Ranked: AI thinking...');
         return;
       }
       updateStatus(player === 'X' ? `Difficulty: ${difficulty}. Your turn (X)` : 'AI is thinking...');
@@ -1960,6 +2113,46 @@
     function endGame(result) {
       gameOver = true;
       setBoardDisabled(true);
+
+      if (gameVariant === 'ranked') {
+        if (result === 'draw') {
+          updateStatus('Ranked round draw. Replay round.');
+          setTimeout(() => {
+            resetBoard();
+            player = 'X';
+            gameOver = false;
+            updateTurnStatus();
+            setBoardDisabled(false);
+          }, 700);
+          return;
+        }
+
+        const youWonRound = result === 'X';
+        if (youWonRound) {
+          rankedScore.x += 1;
+          triggerWinScoreEffect();
+          triggerEquippedWinAnimation();
+          shouldMeteorShatter = shopState.equipped === 'meteor';
+          playWinCheer();
+        } else {
+          rankedScore.o += 1;
+          playLoseHonk();
+        }
+        updateRankedScoreUi();
+
+        if (rankedScore.x >= rankedTargetWins || rankedScore.o >= rankedTargetWins) {
+          gameStarted = false;
+          const winnerLabel = rankedScore.x > rankedScore.o ? 'You' : 'AI';
+          updateStatus(`Ranked match over: ${winnerLabel} won ${rankedScore.x}-${rankedScore.o}.`);
+          setBoardDisabled(true);
+          return;
+        }
+
+        setTimeout(() => {
+          animatePiecesFallAndRestart();
+        }, shouldMeteorShatter ? 1260 : 0);
+        return;
+      }
 
       if (result === 'draw') {
         if (mode === 'online') {
@@ -2075,7 +2268,7 @@
       clearBoardWinEffects();
       shouldMeteorShatter = false;
       clearPendingAiMove();
-      board = Array(9).fill('');
+      board = Array(boardSize * boardSize).fill('');
       player = 'X';
       gameOver = false;
       animatingReset = false;
@@ -2236,6 +2429,10 @@
 
     function startGame() {
       primeAudio();
+      if (gameVariant === 'ranked') {
+        openRankedScreen();
+        return;
+      }
       if (mode !== 'ai') {
         updateStatus('Use Host/Join for online mode.');
         return;
@@ -2251,11 +2448,18 @@
 
     function manualNewGame() {
       if (!gameStarted) {
-        updateStatus(mode === 'ai' ? 'Choose difficulty and press Start.' : 'Host or join a room first.');
+        updateStatus(mode === 'ai'
+          ? (gameVariant === 'ranked' ? 'Press Ranked to start a match.' : 'Choose difficulty and press Start.')
+          : 'Host or join a room first.');
         return;
       }
       if (animatingReset) {
         return;
+      }
+
+      if (gameVariant === 'ranked') {
+        rankedScore = { x: 0, o: 0 };
+        updateRankedScoreUi();
       }
 
       resetBoard();
@@ -2279,9 +2483,11 @@
     function updateModeUi() {
       mode = modeSelect.value;
       const online = mode === 'online';
+      const ranked = gameVariant === 'ranked';
 
       onlineControls.classList.toggle('active', online);
-      difficultySelect.disabled = online;
+      modeSelect.disabled = ranked;
+      difficultySelect.disabled = online || ranked;
       startBtn.disabled = online;
 
       if (online) {
@@ -2293,17 +2499,17 @@
         gameStarted = false;
         resetBoard();
         updateConnection('');
-        updateStatus('Choose difficulty and press Start.');
+        updateStatus(ranked ? 'Ranked ready. First to 3 rounds.' : 'Choose difficulty and press Start.');
         setBoardDisabled(true);
       }
     }
 
     function moveSelection(deltaRow, deltaCol) {
-      const row = Math.floor(selectedIndex / 3);
-      const col = selectedIndex % 3;
-      const nextRow = Math.max(0, Math.min(2, row + deltaRow));
-      const nextCol = Math.max(0, Math.min(2, col + deltaCol));
-      setSelectedIndex(nextRow * 3 + nextCol);
+      const row = Math.floor(selectedIndex / boardSize);
+      const col = selectedIndex % boardSize;
+      const nextRow = Math.max(0, Math.min(boardSize - 1, row + deltaRow));
+      const nextCol = Math.max(0, Math.min(boardSize - 1, col + deltaCol));
+      setSelectedIndex(nextRow * boardSize + nextCol);
     }
 
     function activateSelectedCell() {
@@ -2387,15 +2593,12 @@
       gamepadFrameId = requestAnimationFrame(pollGamepad);
     }
 
-    cells.forEach((cell) => {
-      cell.addEventListener('click', onCellClick);
-    });
-
     startBtn.addEventListener('click', startGame);
     resetBtn.addEventListener('click', manualNewGame);
     hostBtn.addEventListener('click', hostOnlineGame);
     joinBtn.addEventListener('click', joinOnlineGame);
     playMenuBtn.addEventListener('click', openBoardScreen);
+    rankedMenuBtn.addEventListener('click', openRankedScreen);
     shopMenuBtn.addEventListener('click', openShopScreen);
     statsMenuBtn.addEventListener('click', openStatsScreen);
     shopBackBtn.addEventListener('click', openMenuScreen);
@@ -2430,6 +2633,7 @@
     document.addEventListener('touchstart', unlockAudio, { passive: true });
 
     updateConnection('');
+    setVariant('classic');
     loadProfile();
     loadLosun();
     loadShopState();
