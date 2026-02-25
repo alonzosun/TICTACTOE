@@ -361,6 +361,7 @@
     const menuBtn = document.getElementById('menuBtn');
 
     const LOSUN_STORAGE_KEY = 'alons_tic_losun';
+    const ROOM_ID_PREFIX = 'tictac-';
 
     const wins = [
       [0, 1, 2],
@@ -450,6 +451,22 @@
         losun = 0;
       }
       updateLosunUi();
+    }
+
+    function generateRoomCode() {
+      return String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+    }
+
+    function roomCodeToPeerId(code) {
+      return `${ROOM_ID_PREFIX}${code}`;
+    }
+
+    function parseRoomCodeInput(value) {
+      const normalized = value.trim();
+      if (!/^\d{4}$/.test(normalized)) {
+        return null;
+      }
+      return normalized;
     }
 
     function addLosun(amount) {
@@ -915,9 +932,10 @@
         return;
       }
 
-      peer = new Peer();
-      peer.on('open', (id) => {
-        roomCodeInput.value = id;
+      const roomCode = generateRoomCode();
+      peer = new Peer(roomCodeToPeerId(roomCode));
+      peer.on('open', () => {
+        roomCodeInput.value = roomCode;
         updateConnection('Room ready. Share this code and wait for opponent.');
       });
       peer.on('connection', (incoming) => {
@@ -927,16 +945,20 @@
         }
         setupConnHandlers(incoming);
       });
-      peer.on('error', () => {
+      peer.on('error', (err) => {
+        if (err && err.type === 'unavailable-id') {
+          updateConnection('Room code busy. Tap Host again for a new 4-digit code.');
+          return;
+        }
         updateConnection('Could not host room. Try again.');
       });
     }
 
     function joinOnlineGame() {
       primeAudio();
-      const roomCode = roomCodeInput.value.trim();
+      const roomCode = parseRoomCodeInput(roomCodeInput.value);
       if (!roomCode) {
-        updateConnection('Enter a room code first.');
+        updateConnection('Enter a valid 4-digit room code.');
         return;
       }
 
@@ -956,7 +978,7 @@
 
       peer = new Peer();
       peer.on('open', () => {
-        const outgoing = peer.connect(roomCode, { reliable: true });
+        const outgoing = peer.connect(roomCodeToPeerId(roomCode), { reliable: true });
         setupConnHandlers(outgoing);
       });
       peer.on('error', () => {
