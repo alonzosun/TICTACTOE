@@ -25,77 +25,49 @@
     body {
       margin: 0;
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      display: grid;
+      place-items: center;
       background: radial-gradient(circle at top left, #e7dcc5, var(--bg));
       color: var(--text);
       font-family: "Quicksand", "Segoe UI", sans-serif;
       padding: 20px;
-      transition: background 220ms ease, color 220ms ease;
     }
 
-    body.pre-start-dark {
-      background: #2d2d2d;
-      color: #f1f1f1;
-    }
-
-    body.pre-start-dark .game {
-      background:
-        linear-gradient(90deg, rgba(70, 42, 20, 0.2) 0%, rgba(70, 42, 20, 0.1) 12%, rgba(70, 42, 20, 0.2) 24%, rgba(70, 42, 20, 0.1) 36%, rgba(70, 42, 20, 0.2) 48%, rgba(70, 42, 20, 0.1) 60%, rgba(70, 42, 20, 0.2) 72%, rgba(70, 42, 20, 0.1) 84%, rgba(70, 42, 20, 0.2) 100%),
-        linear-gradient(180deg, #aa7542 0%, #8e6138 100%);
-      border-color: #5f5f5f;
-      color: #101010;
-      box-shadow: 0 14px 28px rgba(0, 0, 0, 0.45);
-    }
-
-    body.pre-start-dark .mode,
-    body.pre-start-dark .difficulty,
-    body.pre-start-dark .start,
-    body.pre-start-dark .reset,
-    body.pre-start-dark .room-code,
-    body.pre-start-dark .host,
-    body.pre-start-dark .join,
-    body.pre-start-dark .cell {
-      background: #b7b7b7;
-      color: #111111;
-      border-color: #696969;
-    }
-
-    body.pre-start-dark .cell:hover:enabled {
-      background: #c4c4c4;
-    }
-
-    body.pre-start-dark .site-footer {
-      background: #2d2d2d;
-      color: rgba(241, 241, 241, 0.85);
-    }
-
-    .page {
-      width: 100%;
-      flex: 1;
-      display: grid;
-      place-items: center;
+    .hidden {
+      display: none !important;
     }
 
     .game {
       width: min(96vw, 560px);
-      background:
-        repeating-linear-gradient(
-          8deg,
-          rgba(66, 38, 17, 0.14) 0 2px,
-          rgba(66, 38, 17, 0.03) 2px 6px,
-          rgba(66, 38, 17, 0.12) 6px 9px
-        ),
-        linear-gradient(100deg, rgba(110, 67, 32, 0.22) 0%, rgba(110, 67, 32, 0) 34%, rgba(110, 67, 32, 0.2) 68%, rgba(110, 67, 32, 0.04) 100%),
-        linear-gradient(180deg, #c38a4f 0%, #a86f3a 55%, #956231 100%);
-      border: 3px solid #6f4725;
+      background: var(--panel);
+      border: 3px solid var(--line);
       border-radius: 16px;
       padding: 24px;
-      box-shadow:
-        inset 0 1px 0 rgba(255, 221, 172, 0.42),
-        inset 0 -4px 0 rgba(90, 54, 25, 0.25),
-        0 14px 28px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 14px 28px rgba(0, 0, 0, 0.15);
+    }
+
+    .menu-actions {
+      display: grid;
+      gap: 12px;
+      max-width: 260px;
+      margin: 8px auto 0;
+    }
+
+    .menu-btn {
+      border: 2px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 1.05rem;
+      height: 52px;
+      cursor: pointer;
+    }
+
+    .shop-note {
+      margin: 12px 0 16px;
+      text-align: center;
+      font-weight: 700;
     }
 
     h1 {
@@ -164,7 +136,6 @@
       transition: transform 120ms ease, background 120ms ease;
       position: relative;
       touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
     }
 
     .cell:hover:enabled {
@@ -174,7 +145,6 @@
 
     .cell:disabled {
       cursor: default;
-      pointer-events: none;
     }
 
     .cell:focus-visible {
@@ -192,14 +162,6 @@
 
     .cell.o {
       color: var(--o);
-    }
-
-    .cell.animate-x {
-      animation: place-x 240ms cubic-bezier(0.2, 0.75, 0.3, 1.2);
-    }
-
-    .cell.animate-o {
-      animation: place-o 280ms cubic-bezier(0.16, 0.8, 0.2, 1.15);
     }
 
     .winner {
@@ -224,48 +186,18 @@
       }
     }
 
-    @keyframes place-x {
-      0% {
-        transform: scale(0.45) rotate(-18deg);
-        opacity: 0.3;
-      }
-      65% {
-        transform: scale(1.12) rotate(4deg);
-        opacity: 1;
-      }
-      100% {
-        transform: scale(1) rotate(0deg);
-        opacity: 1;
-      }
-    }
-
-    @keyframes place-o {
-      0% {
-        transform: translateY(-14px) scale(0.62);
-        opacity: 0.2;
-      }
-      60% {
-        transform: translateY(2px) scale(1.06);
-        opacity: 1;
-      }
-      100% {
-        transform: translateY(0) scale(1);
-        opacity: 1;
-      }
-    }
-
     .controls {
       display: flex;
       justify-content: center;
     }
 
-    .site-footer {
-      width: 100%;
+    .footer {
+      margin-top: 14px;
       text-align: center;
-      font-size: 0.95rem;
+      font-size: 0.85rem;
       font-weight: 700;
-      color: rgba(28, 28, 28, 0.72);
-      padding: 10px 8px calc(10px + env(safe-area-inset-bottom));
+      letter-spacing: 0.4px;
+      opacity: 0.7;
     }
 
     .online {
@@ -306,7 +238,7 @@
 
     @media (max-width: 700px) {
       body {
-        padding: 12px 12px 8px;
+        padding: 12px;
       }
 
       .game {
@@ -348,8 +280,23 @@
   </style>
 </head>
 <body>
-  <div class="page">
-    <main class="game" aria-label="Tic-Tac-Toe game">
+  <section class="game" id="menuScreen" aria-label="Main menu">
+    <h1>Alons Tic Tac</h1>
+    <div class="menu-actions">
+      <button id="playMenuBtn" class="menu-btn">Play</button>
+      <button id="shopMenuBtn" class="menu-btn">Shop</button>
+    </div>
+  </section>
+
+  <section class="game hidden" id="shopScreen" aria-label="Shop screen">
+    <h1>Shop</h1>
+    <p class="shop-note">Shop coming soon.</p>
+    <div class="controls">
+      <button id="shopBackBtn" class="start">Back</button>
+    </div>
+  </section>
+
+  <main class="game hidden" id="boardScreen" aria-label="Tic-Tac-Toe game">
     <h1>Alons Tic Tac</h1>
 
     <div class="setup">
@@ -366,7 +313,7 @@
     </div>
 
     <div class="online" id="onlineControls">
-      <input id="roomCode" class="room-code" type="text" inputmode="numeric" maxlength="4" placeholder="4-digit code" aria-label="Room code" />
+      <input id="roomCode" class="room-code" type="text" placeholder="Room code" aria-label="Room code" />
       <button id="hostBtn" class="host">Host</button>
       <button id="joinBtn" class="join">Join</button>
     </div>
@@ -388,10 +335,11 @@
 
     <div class="controls">
       <button class="reset" id="resetBtn">New Game</button>
+      <button class="start" id="menuBtn">Menu</button>
     </div>
-    </main>
-  </div>
-  <footer class="site-footer">Version v1.5</footer>
+
+    <footer class="footer" aria-label="Game version">Version 1.0.0</footer>
+  </main>
 
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script>
@@ -406,6 +354,13 @@
     const hostBtn = document.getElementById('hostBtn');
     const joinBtn = document.getElementById('joinBtn');
     const connectionText = document.getElementById('connectionText');
+    const menuScreen = document.getElementById('menuScreen');
+    const boardScreen = document.getElementById('boardScreen');
+    const shopScreen = document.getElementById('shopScreen');
+    const playMenuBtn = document.getElementById('playMenuBtn');
+    const shopMenuBtn = document.getElementById('shopMenuBtn');
+    const shopBackBtn = document.getElementById('shopBackBtn');
+    const menuBtn = document.getElementById('menuBtn');
 
     const wins = [
       [0, 1, 2],
@@ -446,13 +401,33 @@
       connectionText.textContent = message;
     }
 
-    function updateThemeByState() {
-      const wasDark = document.body.classList.contains('pre-start-dark');
-      const shouldBeDark = !gameStarted;
-      document.body.classList.toggle('pre-start-dark', shouldBeDark);
-      if (wasDark && !shouldBeDark) {
-        playThemePop();
+    function setActiveScreen(screen) {
+      menuScreen.classList.toggle('hidden', screen !== 'menu');
+      boardScreen.classList.toggle('hidden', screen !== 'board');
+      shopScreen.classList.toggle('hidden', screen !== 'shop');
+    }
+
+    function isBoardScreenActive() {
+      return !boardScreen.classList.contains('hidden');
+    }
+
+    function openBoardScreen() {
+      setActiveScreen('board');
+      updateModeUi();
+    }
+
+    function openShopScreen() {
+      setActiveScreen('shop');
+    }
+
+    function openMenuScreen() {
+      setActiveScreen('menu');
+      clearPendingAiMove();
+      if (mode === 'online') {
+        disconnectOnline();
       }
+      gameStarted = false;
+      setBoardDisabled(true);
     }
 
     function refreshSelectedCell() {
@@ -541,11 +516,6 @@
       notes.forEach((note, i) => {
         playTone(note, 0.16, 'triangle', 0.12, i * 0.1);
       });
-    }
-
-    function playThemePop() {
-      playTone(720, 0.08, 'triangle', 0.09, 0);
-      playTone(980, 0.07, 'sine', 0.07, 0.05);
     }
 
     function getEmptyIndices(currentBoard) {
@@ -716,6 +686,18 @@
       }, restartAfter);
     }
 
+    function populateEmptyTilesForFall() {
+      cells.forEach((cell, index) => {
+        if (board[index] !== '') {
+          return;
+        }
+
+        const mark = Math.random() < 0.5 ? 'X' : 'O';
+        cell.textContent = mark;
+        cell.classList.add(mark.toLowerCase());
+      });
+    }
+
     function endGame(result) {
       gameOver = true;
       setBoardDisabled(true);
@@ -735,6 +717,7 @@
         playLoseHonk();
       }
 
+      populateEmptyTilesForFall();
       animatePiecesFallAndRestart();
     }
 
@@ -747,10 +730,6 @@
       const cell = cells[index];
       cell.textContent = mark;
       cell.classList.add(mark.toLowerCase());
-      cell.classList.remove('animate-x', 'animate-o');
-      // Reflow to ensure the placement animation replays each move.
-      void cell.offsetWidth;
-      cell.classList.add(mark === 'X' ? 'animate-x' : 'animate-o');
       cell.disabled = true;
 
       const result = checkWinner();
@@ -822,7 +801,7 @@
       cells.forEach((cell) => {
         cell.textContent = '';
         cell.disabled = !gameStarted;
-        cell.classList.remove('x', 'o', 'winner', 'fall', 'animate-x', 'animate-o');
+        cell.classList.remove('x', 'o', 'winner', 'fall');
         cell.style.removeProperty('--delay');
         cell.style.removeProperty('--spin');
       });
@@ -855,7 +834,6 @@
       conn.on('open', () => {
         onlineConnected = true;
         gameStarted = true;
-        updateThemeByState();
         resetBoard();
         updateConnection(`Connected. You are ${myMark}.`);
         updateTurnStatus();
@@ -880,7 +858,6 @@
       conn.on('close', () => {
         onlineConnected = false;
         gameStarted = false;
-        updateThemeByState();
         setBoardDisabled(true);
         updateConnection('Disconnected. Host or join again.');
         updateStatus('Online session ended.');
@@ -903,12 +880,10 @@
         return;
       }
 
-      const hostCode = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
-      roomCodeInput.value = hostCode;
-      peer = new Peer(hostCode);
+      peer = new Peer();
       peer.on('open', (id) => {
         roomCodeInput.value = id;
-        updateConnection('Room ready. Share this 4-digit code and wait for opponent.');
+        updateConnection('Room ready. Share this code and wait for opponent.');
       });
       peer.on('connection', (incoming) => {
         if (conn && conn.open) {
@@ -925,8 +900,8 @@
     function joinOnlineGame() {
       primeAudio();
       const roomCode = roomCodeInput.value.trim();
-      if (!/^\d{4}$/.test(roomCode)) {
-        updateConnection('Enter a valid 4-digit room code.');
+      if (!roomCode) {
+        updateConnection('Enter a room code first.');
         return;
       }
 
@@ -963,7 +938,6 @@
 
       difficulty = difficultySelect.value;
       gameStarted = true;
-      updateThemeByState();
       resetBoard();
       player = 'X';
       updateTurnStatus();
@@ -1000,14 +974,11 @@
       startBtn.disabled = online;
 
       if (online) {
-        gameStarted = false;
-        updateThemeByState();
         updateStatus('Create or join a room to start online 1v1.');
         setBoardDisabled(true);
       } else {
         disconnectOnline();
         gameStarted = false;
-        updateThemeByState();
         resetBoard();
         updateConnection('');
         updateStatus('Choose difficulty and press Start.');
@@ -1035,6 +1006,10 @@
     }
 
     function handleKeyboard(event) {
+      if (!isBoardScreenActive()) {
+        return;
+      }
+
       if (event.repeat) {
         return;
       }
@@ -1063,6 +1038,7 @@
     function pollGamepad() {
       const pads = navigator.getGamepads ? navigator.getGamepads() : [];
       const pad = pads && pads[0];
+      const boardActive = isBoardScreenActive();
 
       if (pad) {
         const currentState = {
@@ -1074,22 +1050,22 @@
           start: Boolean(pad.buttons[9] && pad.buttons[9].pressed)
         };
 
-        if (currentState.up && !previousPadState.up) {
+        if (boardActive && currentState.up && !previousPadState.up) {
           moveSelection(-1, 0);
         }
-        if (currentState.down && !previousPadState.down) {
+        if (boardActive && currentState.down && !previousPadState.down) {
           moveSelection(1, 0);
         }
-        if (currentState.left && !previousPadState.left) {
+        if (boardActive && currentState.left && !previousPadState.left) {
           moveSelection(0, -1);
         }
-        if (currentState.right && !previousPadState.right) {
+        if (boardActive && currentState.right && !previousPadState.right) {
           moveSelection(0, 1);
         }
-        if (currentState.select && !previousPadState.select) {
+        if (boardActive && currentState.select && !previousPadState.select) {
           activateSelectedCell();
         }
-        if (currentState.start && !previousPadState.start) {
+        if (boardActive && currentState.start && !previousPadState.start) {
           startGame();
         }
 
@@ -1107,6 +1083,10 @@
     resetBtn.addEventListener('click', manualNewGame);
     hostBtn.addEventListener('click', hostOnlineGame);
     joinBtn.addEventListener('click', joinOnlineGame);
+    playMenuBtn.addEventListener('click', openBoardScreen);
+    shopMenuBtn.addEventListener('click', openShopScreen);
+    shopBackBtn.addEventListener('click', openMenuScreen);
+    menuBtn.addEventListener('click', openMenuScreen);
 
     difficultySelect.addEventListener('change', () => {
       difficulty = difficultySelect.value;
@@ -1118,17 +1098,13 @@
     });
 
     modeSelect.addEventListener('change', updateModeUi);
-    roomCodeInput.addEventListener('input', () => {
-      roomCodeInput.value = roomCodeInput.value.replace(/\D/g, '').slice(0, 4);
-    });
     document.addEventListener('keydown', handleKeyboard);
     document.addEventListener('pointerdown', unlockAudio, { passive: true });
     document.addEventListener('touchstart', unlockAudio, { passive: true });
 
     updateConnection('');
-    updateStatus('Choose difficulty and press Start.');
-    updateThemeByState();
-    setBoardDisabled(true);
+    setActiveScreen('menu');
+    updateModeUi();
     refreshSelectedCell();
     if (!gamepadFrameId) {
       gamepadFrameId = requestAnimationFrame(pollGamepad);
@@ -1136,4 +1112,3 @@
   </script>
 </body>
 </html>
-
