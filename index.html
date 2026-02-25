@@ -553,6 +553,52 @@
       filter: blur(0.4px);
     }
 
+    .mega-meteor {
+      position: absolute;
+      left: 50%;
+      top: -220px;
+      width: 112px;
+      height: 112px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 28% 30%, #fff5ca 0%, #ffc973 35%, #b66324 70%, #633015 100%);
+      box-shadow:
+        0 0 42px rgba(255, 186, 95, 0.75),
+        0 0 84px rgba(255, 133, 61, 0.42);
+      pointer-events: none;
+      transform: translateX(-50%) rotate(22deg);
+      animation: mega-meteor-fall 1250ms cubic-bezier(0.2, 0.76, 0.24, 1) forwards;
+      z-index: 8;
+    }
+
+    .mega-meteor::after {
+      content: "";
+      position: absolute;
+      right: 88%;
+      top: 50%;
+      width: 190px;
+      height: 16px;
+      transform: translateY(-50%);
+      background: linear-gradient(90deg, rgba(255, 224, 153, 0.75), rgba(255, 176, 93, 0.25), transparent 72%);
+      border-radius: 999px;
+      filter: blur(1px);
+    }
+
+    .impact-flash {
+      position: absolute;
+      left: 50%;
+      top: 66%;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 247, 200, 0.95), rgba(255, 188, 96, 0.25), transparent 75%);
+      pointer-events: none;
+      transform: translate(-50%, -50%) scale(0.2);
+      opacity: 0;
+      animation: impact-flare 560ms ease-out forwards;
+      animation-delay: 1080ms;
+      z-index: 9;
+    }
+
     .meteor-impact {
       position: absolute;
       left: var(--x, 50%);
@@ -573,6 +619,13 @@
       animation: fall-away 900ms cubic-bezier(0.25, 0.8, 0.2, 1) forwards;
       animation-delay: var(--delay, 0ms);
       pointer-events: none;
+    }
+
+    .shatter {
+      animation: shatter-away 1150ms cubic-bezier(0.2, 0.82, 0.2, 1) forwards;
+      animation-delay: var(--delay, 0ms);
+      pointer-events: none;
+      transform-origin: center;
     }
 
     @keyframes fall-away {
@@ -701,6 +754,35 @@
       }
     }
 
+    @keyframes mega-meteor-fall {
+      0% {
+        transform: translate(-50%, -280px) rotate(20deg) scale(0.9);
+        opacity: 0;
+      }
+      12% {
+        opacity: 1;
+      }
+      100% {
+        transform: translate(calc(-50% + 6px), 315px) rotate(35deg) scale(0.88);
+        opacity: 0;
+      }
+    }
+
+    @keyframes impact-flare {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.1);
+      }
+      40% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(3.8);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(5.2);
+      }
+    }
+
     @keyframes impact-burst {
       0% {
         opacity: 0;
@@ -713,6 +795,17 @@
       100% {
         opacity: 0;
         transform: translate(-50%, -50%) scale(2.2);
+      }
+    }
+
+    @keyframes shatter-away {
+      0% {
+        transform: translate(0, 0) rotate(0deg) scale(1);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(var(--dx, 0px), var(--dy, 210px)) rotate(var(--spin, 180deg)) scale(var(--scale, 0.45));
+        opacity: 0;
       }
     }
 
@@ -1020,6 +1113,7 @@
     let lastStatsTapAt = 0;
     let winEffectTimer = null;
     let scoreEffectTimer = null;
+    let shouldMeteorShatter = false;
 
     function updateStatus(message) {
       statusText.textContent = message;
@@ -1339,7 +1433,7 @@
 
     function clearBoardWinEffects() {
       boardElement.classList.remove('effect-classic', 'effect-ember', 'effect-aurora', 'effect-meteor');
-      boardElement.querySelectorAll('.win-particle, .win-glint, .ember-spark, .smoke-puff, .aurora-ribbon, .aurora-star, .meteor, .meteor-impact').forEach((node) => node.remove());
+      boardElement.querySelectorAll('.win-particle, .win-glint, .ember-spark, .smoke-puff, .aurora-ribbon, .aurora-star, .meteor, .meteor-impact, .mega-meteor, .impact-flash').forEach((node) => node.remove());
       if (winEffectTimer) {
         clearTimeout(winEffectTimer);
         winEffectTimer = null;
@@ -1428,6 +1522,16 @@
       }
     }
 
+    function spawnMegaMeteor() {
+      const megaMeteor = document.createElement('span');
+      megaMeteor.className = 'mega-meteor';
+      boardElement.appendChild(megaMeteor);
+
+      const flash = document.createElement('span');
+      flash.className = 'impact-flash';
+      boardElement.appendChild(flash);
+    }
+
     function spawnClassicGlints(count) {
       for (let i = 0; i < count; i += 1) {
         const glint = document.createElement('span');
@@ -1460,9 +1564,10 @@
         spawnWinParticles(['#89f5ff', '#9ea8ff', '#5ff0bf'], 14);
       } else if (equipped === 'meteor') {
         boardElement.classList.add('effect-meteor');
-        spawnMeteors(10);
-        spawnMeteorImpacts(10);
-        spawnWinParticles(['#ffd35e', '#ffaf4d', '#fff2b5'], 20);
+        spawnMegaMeteor();
+        spawnMeteors(2);
+        spawnMeteorImpacts(12);
+        spawnWinParticles(['#ffd35e', '#ffaf4d', '#fff2b5'], 26);
       } else {
         return;
       }
@@ -1735,11 +1840,13 @@
     function animatePiecesFallAndRestart() {
       animatingReset = true;
       const fallingCells = [...cells];
+      const shatterMode = shouldMeteorShatter;
       const delayStep = 65;
-      const fallDuration = 900;
+      const fallDuration = shatterMode ? 1150 : 900;
+      shouldMeteorShatter = false;
 
       fallingCells.forEach((cell) => {
-        cell.classList.remove('fall');
+        cell.classList.remove('fall', 'shatter');
       });
 
       document.body.offsetHeight;
@@ -1747,7 +1854,14 @@
       fallingCells.forEach((cell, i) => {
         cell.style.setProperty('--delay', `${i * delayStep}ms`);
         cell.style.setProperty('--spin', `${-110 + Math.random() * 220}deg`);
-        cell.classList.add('fall');
+        if (shatterMode) {
+          cell.style.setProperty('--dx', `${-180 + Math.random() * 360}px`);
+          cell.style.setProperty('--dy', `${140 + Math.random() * 220}px`);
+          cell.style.setProperty('--scale', `${0.25 + Math.random() * 0.65}`);
+          cell.classList.add('shatter');
+        } else {
+          cell.classList.add('fall');
+        }
       });
 
       const maxDelay = Math.max(0, (fallingCells.length - 1) * delayStep);
@@ -1785,6 +1899,7 @@
       if (won) {
         triggerWinScoreEffect();
         triggerEquippedWinAnimation();
+        shouldMeteorShatter = shopState.equipped === 'meteor';
         if (mode === 'online') {
           addLosun(10);
           updateStatus('You win! +10 Losun');
@@ -1873,6 +1988,7 @@
     function resetBoard() {
       clearScoreEffect();
       clearBoardWinEffects();
+      shouldMeteorShatter = false;
       clearPendingAiMove();
       board = Array(9).fill('');
       player = 'X';
@@ -1882,9 +1998,12 @@
       cells.forEach((cell) => {
         cell.textContent = '';
         cell.disabled = !gameStarted;
-        cell.classList.remove('x', 'o', 'winner', 'fall');
+        cell.classList.remove('x', 'o', 'winner', 'fall', 'shatter');
         cell.style.removeProperty('--delay');
         cell.style.removeProperty('--spin');
+        cell.style.removeProperty('--dx');
+        cell.style.removeProperty('--dy');
+        cell.style.removeProperty('--scale');
       });
 
       const firstEmpty = findFirstEmptyCell();
