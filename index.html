@@ -1077,6 +1077,7 @@
     const startBtn = document.getElementById('startBtn');
     const difficultySelect = document.getElementById('difficulty');
     const modeSelect = document.getElementById('mode');
+    const setupControls = document.querySelector('.setup');
     const onlineControls = document.getElementById('onlineControls');
     const roomCodeInput = document.getElementById('roomCode');
     const hostBtn = document.getElementById('hostBtn');
@@ -2668,6 +2669,7 @@
         mode = 'online';
         modeSelect.value = 'online';
       }
+      setupControls.classList.toggle('hidden', ranked);
       onlineControls.classList.toggle('active', activeOnline);
       roomCodeInput.classList.toggle('hidden', showRankedQueue);
       hostBtn.classList.toggle('hidden', showRankedQueue);
