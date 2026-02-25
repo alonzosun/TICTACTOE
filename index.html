@@ -287,6 +287,41 @@
       min-height: 1.4em;
     }
 
+    .score-effect {
+      margin: -8px 0 14px;
+      text-align: center;
+      min-height: 1.35em;
+      font-weight: 900;
+      letter-spacing: 0.8px;
+      opacity: 0;
+      transform: translateY(8px) scale(0.95);
+      pointer-events: none;
+    }
+
+    .score-effect.active {
+      animation: score-pop 850ms cubic-bezier(0.22, 0.86, 0.31, 1.1) forwards;
+    }
+
+    .score-effect.score-classic {
+      color: #4b2f1f;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+    }
+
+    .score-effect.score-ember {
+      color: #9a2a00;
+      text-shadow: 0 0 12px rgba(255, 126, 70, 0.6);
+    }
+
+    .score-effect.score-aurora {
+      color: #265c9a;
+      text-shadow: 0 0 14px rgba(119, 169, 255, 0.72);
+    }
+
+    .score-effect.score-meteor {
+      color: #7a4d00;
+      text-shadow: 0 0 14px rgba(255, 206, 89, 0.85);
+    }
+
     .board {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -449,6 +484,25 @@
       100% {
         transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, -80px))) scale(0.1);
         opacity: 0;
+      }
+    }
+
+    @keyframes score-pop {
+      0% {
+        opacity: 0;
+        transform: translateY(10px) scale(0.85);
+      }
+      24% {
+        opacity: 1;
+        transform: translateY(-4px) scale(1.08);
+      }
+      75% {
+        opacity: 1;
+        transform: translateY(-2px) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-14px) scale(0.95);
       }
     }
 
@@ -623,6 +677,7 @@
 
     <p class="connection" id="connectionText" aria-live="polite"></p>
     <p class="status" id="status" aria-live="polite"></p>
+    <p class="score-effect" id="scoreEffect" aria-live="polite"></p>
 
     <section class="board" aria-label="Game board">
       <button class="cell" data-index="0" aria-label="Cell 1"></button>
@@ -646,6 +701,7 @@
   <script>
     const cells = Array.from(document.querySelectorAll('.cell'));
     const statusText = document.getElementById('status');
+    const scoreEffectText = document.getElementById('scoreEffect');
     const resetBtn = document.getElementById('resetBtn');
     const startBtn = document.getElementById('startBtn');
     const difficultySelect = document.getElementById('difficulty');
@@ -734,6 +790,7 @@
     let statsTapCount = 0;
     let lastStatsTapAt = 0;
     let winEffectTimer = null;
+    let scoreEffectTimer = null;
 
     function updateStatus(message) {
       statusText.textContent = message;
@@ -741,6 +798,25 @@
 
     function updateConnection(message) {
       connectionText.textContent = message;
+    }
+
+    function clearScoreEffect() {
+      scoreEffectText.classList.remove('active', 'score-classic', 'score-ember', 'score-aurora', 'score-meteor');
+      scoreEffectText.textContent = '';
+      if (scoreEffectTimer) {
+        clearTimeout(scoreEffectTimer);
+        scoreEffectTimer = null;
+      }
+    }
+
+    function triggerWinScoreEffect() {
+      clearScoreEffect();
+      const equipped = shopState.equipped || 'classic';
+      scoreEffectText.textContent = mode === 'online' ? '+10 LOSUN' : 'WIN';
+      scoreEffectText.classList.add('active', `score-${equipped}`);
+      scoreEffectTimer = setTimeout(() => {
+        clearScoreEffect();
+      }, 900);
     }
 
     function updateAdminUi() {
@@ -1387,6 +1463,7 @@
         recordMatchResult(result, won);
       }
       if (won) {
+        triggerWinScoreEffect();
         triggerEquippedWinAnimation();
         if (mode === 'online') {
           addLosun(10);
@@ -1474,6 +1551,7 @@
     }
 
     function resetBoard() {
+      clearScoreEffect();
       clearBoardWinEffects();
       clearPendingAiMove();
       board = Array(9).fill('');
