@@ -251,6 +251,7 @@
     let animatingReset = false;
     let aiMoveTimer = null;
     let audioCtx = null;
+    let audioUnlocked = false;
     let selectedIndex = 0;
     let gamepadFrameId = null;
     let previousPadState = {
@@ -287,9 +288,32 @@
         if (!AudioContextClass) {
           return null;
         }
-        audioCtx = new AudioContextClass();
+        audioCtx = new AudioContextClass({ latencyHint: 'interactive' });
       }
       return audioCtx;
+    }
+
+    function unlockAudio() {
+      const ctx = getAudioContext();
+      if (!ctx || audioUnlocked) {
+        return;
+      }
+
+      const finalizeUnlock = () => {
+        // Play an inaudible buffer once to satisfy strict mobile autoplay policies.
+        const buffer = ctx.createBuffer(1, 1, 22050);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.start(0);
+        audioUnlocked = true;
+      };
+
+      if (ctx.state === 'suspended') {
+        ctx.resume().then(finalizeUnlock).catch(() => {});
+      } else {
+        finalizeUnlock();
+      }
     }
 
     function playTone(frequency, duration, type, volume, when = 0) {
@@ -329,10 +353,7 @@
     }
 
     function primeAudio() {
-      const ctx = getAudioContext();
-      if (ctx && ctx.state === 'suspended') {
-        ctx.resume();
-      }
+      unlockAudio();
     }
 
     function getEmptyIndices(currentBoard) {
@@ -694,6 +715,8 @@
     startBtn.addEventListener('click', startGame);
     resetBtn.addEventListener('click', manualNewGame);
     document.addEventListener('keydown', handleKeyboard);
+    document.addEventListener('pointerdown', unlockAudio, { passive: true });
+    document.addEventListener('touchstart', unlockAudio, { passive: true });
 
     updateStatus('Choose difficulty and press Start.');
     setBoardDisabled(true);
