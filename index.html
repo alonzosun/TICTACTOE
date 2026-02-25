@@ -451,6 +451,20 @@
       z-index: 5;
     }
 
+    .win-glint {
+      position: absolute;
+      left: var(--x, 50%);
+      top: var(--y, 50%);
+      width: 4px;
+      height: 52px;
+      background: linear-gradient(180deg, transparent, rgba(255, 250, 196, 0.95), transparent);
+      transform: translate(-50%, -50%) rotate(var(--r, 0deg));
+      opacity: 0;
+      pointer-events: none;
+      animation: glint-flash 700ms ease-out forwards;
+      z-index: 6;
+    }
+
     .ember-spark {
       position: absolute;
       left: var(--x, 50%);
@@ -463,6 +477,21 @@
       pointer-events: none;
       animation: ember-rise 900ms ease-out forwards;
       z-index: 4;
+    }
+
+    .smoke-puff {
+      position: absolute;
+      left: var(--x, 50%);
+      bottom: -2px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(90, 90, 90, 0.34), rgba(90, 90, 90, 0));
+      pointer-events: none;
+      opacity: 0.65;
+      animation: smoke-rise 1200ms ease-out forwards;
+      animation-delay: var(--delay, 0ms);
+      z-index: 3;
     }
 
     .aurora-ribbon {
@@ -478,6 +507,21 @@
       filter: blur(1px);
       animation: aurora-sweep 900ms ease-out forwards;
       z-index: 4;
+    }
+
+    .aurora-star {
+      position: absolute;
+      left: var(--x, 50%);
+      top: var(--y, 50%);
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.05));
+      pointer-events: none;
+      opacity: 0;
+      animation: aurora-twinkle 900ms ease-out forwards;
+      animation-delay: var(--delay, 0ms);
+      z-index: 5;
     }
 
     .meteor {
@@ -509,6 +553,22 @@
       filter: blur(0.4px);
     }
 
+    .meteor-impact {
+      position: absolute;
+      left: var(--x, 50%);
+      top: var(--y, 75%);
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 246, 182, 0.95), rgba(255, 170, 83, 0.15), transparent 72%);
+      pointer-events: none;
+      transform: translate(-50%, -50%) scale(0.2);
+      opacity: 0;
+      animation: impact-burst 520ms ease-out forwards;
+      animation-delay: var(--delay, 0ms);
+      z-index: 6;
+    }
+
     .fall {
       animation: fall-away 900ms cubic-bezier(0.25, 0.8, 0.2, 1) forwards;
       animation-delay: var(--delay, 0ms);
@@ -530,6 +590,21 @@
       0% { transform: scale(1); }
       45% { transform: scale(1.014); }
       100% { transform: scale(1); }
+    }
+
+    @keyframes glint-flash {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) rotate(var(--r, 0deg)) scaleY(0.6);
+      }
+      30% {
+        opacity: 1;
+        transform: translate(-50%, -50%) rotate(var(--r, 0deg)) scaleY(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) rotate(var(--r, 0deg)) scaleY(1.2);
+      }
     }
 
     @keyframes effect-ember {
@@ -572,6 +647,17 @@
       }
     }
 
+    @keyframes smoke-rise {
+      0% {
+        transform: translate(-50%, 0) scale(0.35);
+        opacity: 0.52;
+      }
+      100% {
+        transform: translate(calc(-50% + var(--drift, 0px)), -75px) scale(1.4);
+        opacity: 0;
+      }
+    }
+
     @keyframes aurora-sweep {
       0% {
         transform: translateX(-35%) scaleX(0.75);
@@ -586,6 +672,21 @@
       }
     }
 
+    @keyframes aurora-twinkle {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+      }
+      35% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.3);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.6);
+      }
+    }
+
     @keyframes meteor-fall {
       0% {
         transform: translate(-50%, -8px) rotate(25deg) scale(0.85);
@@ -597,6 +698,21 @@
       100% {
         transform: translate(calc(-50% + var(--dx, 0px)), 340px) rotate(25deg) scale(0.2);
         opacity: 0;
+      }
+    }
+
+    @keyframes impact-burst {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.2);
+      }
+      40% {
+        opacity: 0.95;
+        transform: translate(-50%, -50%) scale(1.6);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(2.2);
       }
     }
 
@@ -1223,7 +1339,7 @@
 
     function clearBoardWinEffects() {
       boardElement.classList.remove('effect-classic', 'effect-ember', 'effect-aurora', 'effect-meteor');
-      boardElement.querySelectorAll('.win-particle, .ember-spark, .aurora-ribbon, .meteor').forEach((node) => node.remove());
+      boardElement.querySelectorAll('.win-particle, .win-glint, .ember-spark, .smoke-puff, .aurora-ribbon, .aurora-star, .meteor, .meteor-impact').forEach((node) => node.remove());
       if (winEffectTimer) {
         clearTimeout(winEffectTimer);
         winEffectTimer = null;
@@ -1255,6 +1371,17 @@
       }
     }
 
+    function spawnEmberSmoke(count) {
+      for (let i = 0; i < count; i += 1) {
+        const smoke = document.createElement('span');
+        smoke.className = 'smoke-puff';
+        smoke.style.setProperty('--x', `${8 + Math.random() * 84}%`);
+        smoke.style.setProperty('--drift', `${-22 + Math.random() * 44}px`);
+        smoke.style.setProperty('--delay', `${Math.floor(Math.random() * 240)}ms`);
+        boardElement.appendChild(smoke);
+      }
+    }
+
     function spawnAuroraRibbons() {
       const colors = ['#89f5ff', '#9ea8ff', '#5ff0bf', '#b39aff'];
       for (let i = 0; i < 4; i += 1) {
@@ -1264,6 +1391,17 @@
         ribbon.style.setProperty('--c', colors[i % colors.length]);
         ribbon.style.animationDelay = `${i * 95}ms`;
         boardElement.appendChild(ribbon);
+      }
+    }
+
+    function spawnAuroraStars(count) {
+      for (let i = 0; i < count; i += 1) {
+        const star = document.createElement('span');
+        star.className = 'aurora-star';
+        star.style.setProperty('--x', `${8 + Math.random() * 84}%`);
+        star.style.setProperty('--y', `${12 + Math.random() * 74}%`);
+        star.style.setProperty('--delay', `${Math.floor(Math.random() * 380)}ms`);
+        boardElement.appendChild(star);
       }
     }
 
@@ -1279,24 +1417,51 @@
       }
     }
 
+    function spawnMeteorImpacts(count) {
+      for (let i = 0; i < count; i += 1) {
+        const impact = document.createElement('span');
+        impact.className = 'meteor-impact';
+        impact.style.setProperty('--x', `${8 + Math.random() * 84}%`);
+        impact.style.setProperty('--y', `${55 + Math.random() * 36}%`);
+        impact.style.setProperty('--delay', `${160 + i * 70 + Math.floor(Math.random() * 90)}ms`);
+        boardElement.appendChild(impact);
+      }
+    }
+
+    function spawnClassicGlints(count) {
+      for (let i = 0; i < count; i += 1) {
+        const glint = document.createElement('span');
+        glint.className = 'win-glint';
+        glint.style.setProperty('--x', `${10 + Math.random() * 80}%`);
+        glint.style.setProperty('--y', `${12 + Math.random() * 72}%`);
+        glint.style.setProperty('--r', `${-32 + Math.random() * 64}deg`);
+        glint.style.animationDelay = `${Math.floor(Math.random() * 160)}ms`;
+        boardElement.appendChild(glint);
+      }
+    }
+
     function triggerEquippedWinAnimation() {
       clearBoardWinEffects();
       const equipped = shopState.equipped || 'classic';
 
       if (equipped === 'classic') {
         boardElement.classList.add('effect-classic');
+        spawnClassicGlints(14);
         spawnWinParticles(['#ffe38a', '#ffd067', '#fff2b5'], 18);
       } else if (equipped === 'ember') {
         boardElement.classList.add('effect-ember');
         spawnEmberSparks(22);
+        spawnEmberSmoke(14);
         spawnWinParticles(['#ffb566', '#ff7c57', '#ffd67a'], 16);
       } else if (equipped === 'aurora') {
         boardElement.classList.add('effect-aurora');
         spawnAuroraRibbons();
+        spawnAuroraStars(20);
         spawnWinParticles(['#89f5ff', '#9ea8ff', '#5ff0bf'], 14);
       } else if (equipped === 'meteor') {
         boardElement.classList.add('effect-meteor');
         spawnMeteors(10);
+        spawnMeteorImpacts(10);
         spawnWinParticles(['#ffd35e', '#ffaf4d', '#fff2b5'], 20);
       } else {
         return;
