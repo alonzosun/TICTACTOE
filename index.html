@@ -194,6 +194,14 @@
       color: var(--o);
     }
 
+    .cell.animate-x {
+      animation: place-x 240ms cubic-bezier(0.2, 0.75, 0.3, 1.2);
+    }
+
+    .cell.animate-o {
+      animation: place-o 280ms cubic-bezier(0.16, 0.8, 0.2, 1.15);
+    }
+
     .winner {
       background: #dcf5df;
       border-color: var(--accent);
@@ -213,6 +221,36 @@
       100% {
         transform: translateY(190px) rotate(var(--spin, 60deg));
         opacity: 0;
+      }
+    }
+
+    @keyframes place-x {
+      0% {
+        transform: scale(0.45) rotate(-18deg);
+        opacity: 0.3;
+      }
+      65% {
+        transform: scale(1.12) rotate(4deg);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+      }
+    }
+
+    @keyframes place-o {
+      0% {
+        transform: translateY(-14px) scale(0.62);
+        opacity: 0.2;
+      }
+      60% {
+        transform: translateY(2px) scale(1.06);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
       }
     }
 
@@ -353,7 +391,7 @@
     </div>
     </main>
   </div>
-  <footer class="site-footer">Version v1.4</footer>
+  <footer class="site-footer">Version v1.5</footer>
 
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script>
@@ -709,6 +747,10 @@
       const cell = cells[index];
       cell.textContent = mark;
       cell.classList.add(mark.toLowerCase());
+      cell.classList.remove('animate-x', 'animate-o');
+      // Reflow to ensure the placement animation replays each move.
+      void cell.offsetWidth;
+      cell.classList.add(mark === 'X' ? 'animate-x' : 'animate-o');
       cell.disabled = true;
 
       const result = checkWinner();
@@ -780,7 +822,7 @@
       cells.forEach((cell) => {
         cell.textContent = '';
         cell.disabled = !gameStarted;
-        cell.classList.remove('x', 'o', 'winner', 'fall');
+        cell.classList.remove('x', 'o', 'winner', 'fall', 'animate-x', 'animate-o');
         cell.style.removeProperty('--delay');
         cell.style.removeProperty('--spin');
       });
