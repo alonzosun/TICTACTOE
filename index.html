@@ -122,6 +122,37 @@
       opacity: 0.85;
     }
 
+    .admin {
+      border: 2px dashed var(--line);
+      border-radius: 10px;
+      background: #fff;
+      padding: 10px;
+      margin: 0 0 12px;
+    }
+
+    .admin-title {
+      margin: 0 0 8px;
+      text-align: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+    }
+
+    .admin-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 8px;
+    }
+
+    .admin-note {
+      margin: 8px 0 0;
+      text-align: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      opacity: 0.8;
+    }
+
     .setup {
       display: flex;
       gap: 8px;
@@ -336,7 +367,7 @@
   </section>
 
   <section class="game hidden" id="statsScreen" aria-label="Stats screen">
-    <h1>Stats</h1>
+    <h1 id="statsTitle">Stats</h1>
     <div class="profile" aria-label="Player profile">
       <label for="usernameInput" class="profile-label">Username</label>
       <div class="profile-row">
@@ -347,6 +378,19 @@
       <p class="profile-stats">
         Online 1v1 only: Games <span id="gamesCount">0</span> | Wins <span id="winsCount">0</span> | Losses <span id="lossesCount">0</span> | Draws <span id="drawsCount">0</span>
       </p>
+    </div>
+    <div class="admin hidden" id="adminPanel" aria-label="Owner admin panel">
+      <p class="admin-title">Owner Admin</p>
+      <div class="profile-row">
+        <input id="adminPassInput" class="username-input" type="password" placeholder="Owner passcode" />
+        <button id="adminUnlockBtn" class="start">Unlock</button>
+      </div>
+      <div id="adminActions" class="admin-actions hidden">
+        <button id="adminAddLosunBtn" class="start">+1000 Losun</button>
+        <button id="adminResetStatsBtn" class="reset">Reset Stats</button>
+        <button id="adminResetAllBtn" class="reset">Reset Stats + Losun</button>
+      </div>
+      <p class="admin-note">Resets apply to this browser/device only.</p>
     </div>
     <div class="controls">
       <button id="statsBackBtn" class="start">Back</button>
@@ -420,16 +464,25 @@
     const shopBackBtn = document.getElementById('shopBackBtn');
     const statsBackBtn = document.getElementById('statsBackBtn');
     const menuBtn = document.getElementById('menuBtn');
+    const statsTitle = document.getElementById('statsTitle');
     const usernameInput = document.getElementById('usernameInput');
     const saveProfileBtn = document.getElementById('saveProfileBtn');
     const gamesCount = document.getElementById('gamesCount');
     const winsCount = document.getElementById('winsCount');
     const lossesCount = document.getElementById('lossesCount');
     const drawsCount = document.getElementById('drawsCount');
+    const adminPanel = document.getElementById('adminPanel');
+    const adminPassInput = document.getElementById('adminPassInput');
+    const adminUnlockBtn = document.getElementById('adminUnlockBtn');
+    const adminActions = document.getElementById('adminActions');
+    const adminAddLosunBtn = document.getElementById('adminAddLosunBtn');
+    const adminResetStatsBtn = document.getElementById('adminResetStatsBtn');
+    const adminResetAllBtn = document.getElementById('adminResetAllBtn');
 
     const LOSUN_STORAGE_KEY = 'alons_tic_losun';
     const PROFILE_STORAGE_KEY = 'alons_tic_profile';
     const ROOM_ID_PREFIX = 'tictac-';
+    const OWNER_ADMIN_CODE = 'alonzosun-admin';
 
     const wins = [
       [0, 1, 2],
@@ -463,6 +516,9 @@
     let myMark = 'X';
     let losun = 0;
     let profile = { username: 'Player', games: 0, wins: 0, losses: 0, draws: 0 };
+    let adminUnlocked = false;
+    let statsTapCount = 0;
+    let lastStatsTapAt = 0;
 
     function updateStatus(message) {
       statusText.textContent = message;
@@ -470,6 +526,77 @@
 
     function updateConnection(message) {
       connectionText.textContent = message;
+    }
+
+    function updateAdminUi() {
+      adminActions.classList.toggle('hidden', !adminUnlocked);
+      adminPassInput.disabled = adminUnlocked;
+      adminUnlockBtn.disabled = adminUnlocked;
+      if (adminUnlocked) {
+        adminPassInput.value = '';
+      }
+    }
+
+    function resetStatsOnly() {
+      profile.games = 0;
+      profile.wins = 0;
+      profile.losses = 0;
+      profile.draws = 0;
+      saveProfile();
+    }
+
+    function handleStatsTitleTap() {
+      const now = Date.now();
+      if (now - lastStatsTapAt > 1800) {
+        statsTapCount = 0;
+      }
+      lastStatsTapAt = now;
+      statsTapCount += 1;
+      if (statsTapCount >= 6) {
+        adminPanel.classList.remove('hidden');
+        statsTapCount = 0;
+        updateConnection('Owner panel revealed.');
+      }
+    }
+
+    function unlockAdmin() {
+      if (adminUnlocked) {
+        return;
+      }
+      if (adminPassInput.value !== OWNER_ADMIN_CODE) {
+        updateConnection('Wrong owner passcode.');
+        return;
+      }
+      adminUnlocked = true;
+      updateAdminUi();
+      updateConnection('Owner admin unlocked.');
+    }
+
+    function adminAddLosun() {
+      if (!adminUnlocked) {
+        return;
+      }
+      addLosun(1000);
+      updateConnection('Owner command: +1000 Losun.');
+    }
+
+    function adminResetStats() {
+      if (!adminUnlocked) {
+        return;
+      }
+      resetStatsOnly();
+      updateConnection('Owner command: stats reset (this device).');
+    }
+
+    function adminResetAllProgress() {
+      if (!adminUnlocked) {
+        return;
+      }
+      resetStatsOnly();
+      losun = 0;
+      saveLosun();
+      updateLosunUi();
+      updateConnection('Owner command: stats and Losun reset (this device).');
     }
 
     function sanitizeUsername(value) {
@@ -551,7 +678,9 @@
 
     function openStatsScreen() {
       setActiveScreen('stats');
+      statsTapCount = 0;
       updateProfileUi();
+      updateAdminUi();
     }
 
     function openMenuScreen() {
@@ -1284,7 +1413,12 @@
     shopBackBtn.addEventListener('click', openMenuScreen);
     statsBackBtn.addEventListener('click', openMenuScreen);
     menuBtn.addEventListener('click', openMenuScreen);
+    statsTitle.addEventListener('click', handleStatsTitleTap);
     saveProfileBtn.addEventListener('click', saveUsernameFromInput);
+    adminUnlockBtn.addEventListener('click', unlockAdmin);
+    adminAddLosunBtn.addEventListener('click', adminAddLosun);
+    adminResetStatsBtn.addEventListener('click', adminResetStats);
+    adminResetAllBtn.addEventListener('click', adminResetAllProgress);
     usernameInput.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') {
         event.preventDefault();
@@ -1309,6 +1443,7 @@
     updateConnection('');
     loadProfile();
     loadLosun();
+    updateAdminUi();
     window.spendLosun = spendLosun;
     setActiveScreen('menu');
     updateModeUi();
