@@ -396,6 +396,16 @@
       border-color: var(--accent);
     }
 
+    .board.effect-classic {
+      box-shadow:
+        0 0 0 2px rgba(255, 236, 168, 0.45),
+        0 0 18px rgba(255, 221, 120, 0.5),
+        inset 0 2px 0 rgba(255, 214, 158, 0.35),
+        inset 0 -2px 0 rgba(66, 37, 21, 0.35),
+        0 8px 18px rgba(73, 44, 25, 0.26);
+      animation: effect-classic 750ms ease-out;
+    }
+
     .board.effect-ember {
       box-shadow:
         0 0 0 2px rgba(255, 169, 76, 0.45),
@@ -441,6 +451,64 @@
       z-index: 5;
     }
 
+    .ember-spark {
+      position: absolute;
+      left: var(--x, 50%);
+      bottom: -6px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--c, #ffb566);
+      opacity: 0.95;
+      pointer-events: none;
+      animation: ember-rise 900ms ease-out forwards;
+      z-index: 4;
+    }
+
+    .aurora-ribbon {
+      position: absolute;
+      left: -15%;
+      top: var(--y, 25%);
+      width: 130%;
+      height: 10px;
+      border-radius: 999px;
+      opacity: 0.78;
+      pointer-events: none;
+      background: linear-gradient(90deg, transparent, var(--c, #89f5ff), transparent);
+      filter: blur(1px);
+      animation: aurora-sweep 900ms ease-out forwards;
+      z-index: 4;
+    }
+
+    .meteor {
+      position: absolute;
+      left: var(--x, 50%);
+      top: -26px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #fff9cf, var(--c, #ffd35e));
+      box-shadow: 0 0 18px rgba(255, 185, 70, 0.68);
+      pointer-events: none;
+      transform: translateX(-50%) rotate(25deg);
+      animation: meteor-fall 820ms cubic-bezier(0.2, 0.72, 0.22, 1) forwards;
+      animation-delay: var(--delay, 0ms);
+      z-index: 6;
+    }
+
+    .meteor::after {
+      content: "";
+      position: absolute;
+      right: 100%;
+      top: 50%;
+      width: 70px;
+      height: 3px;
+      transform: translateY(-50%);
+      background: linear-gradient(90deg, rgba(255, 221, 132, 0.7), transparent);
+      border-radius: 999px;
+      filter: blur(0.4px);
+    }
+
     .fall {
       animation: fall-away 900ms cubic-bezier(0.25, 0.8, 0.2, 1) forwards;
       animation-delay: var(--delay, 0ms);
@@ -456,6 +524,12 @@
         transform: translateY(190px) rotate(var(--spin, 60deg));
         opacity: 0;
       }
+    }
+
+    @keyframes effect-classic {
+      0% { transform: scale(1); }
+      45% { transform: scale(1.014); }
+      100% { transform: scale(1); }
     }
 
     @keyframes effect-ember {
@@ -483,6 +557,45 @@
       }
       100% {
         transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, -80px))) scale(0.1);
+        opacity: 0;
+      }
+    }
+
+    @keyframes ember-rise {
+      0% {
+        transform: translateY(0) scale(0.5);
+        opacity: 0.95;
+      }
+      100% {
+        transform: translateY(calc(-70px - var(--lift, 0px))) scale(0.15);
+        opacity: 0;
+      }
+    }
+
+    @keyframes aurora-sweep {
+      0% {
+        transform: translateX(-35%) scaleX(0.75);
+        opacity: 0;
+      }
+      25% {
+        opacity: 0.82;
+      }
+      100% {
+        transform: translateX(22%) scaleX(1.04);
+        opacity: 0;
+      }
+    }
+
+    @keyframes meteor-fall {
+      0% {
+        transform: translate(-50%, -8px) rotate(25deg) scale(0.85);
+        opacity: 0;
+      }
+      20% {
+        opacity: 1;
+      }
+      100% {
+        transform: translate(calc(-50% + var(--dx, 0px)), 340px) rotate(25deg) scale(0.2);
         opacity: 0;
       }
     }
@@ -747,10 +860,10 @@
     const OWNER_ADMIN_CODE = 'alonzosun';
 
     const WIN_ANIMATIONS = [
-      { id: 'classic', name: 'Classic Cheer', cost: 0, description: 'Default win celebration.' },
-      { id: 'ember', name: 'Ember Burst', cost: 120, description: 'Warm orange sparks and glow.' },
-      { id: 'aurora', name: 'Aurora Wave', cost: 180, description: 'Cool cyan-purple pulse wave.' },
-      { id: 'meteor', name: 'Meteor Storm', cost: 260, description: 'Golden blast with heavy impact.' }
+      { id: 'classic', name: 'Classic Cheer', cost: 0, description: 'Golden celebratory burst over the board.' },
+      { id: 'ember', name: 'Ember Burst', cost: 120, description: 'Real ember sparks rise from the board.' },
+      { id: 'aurora', name: 'Aurora Wave', cost: 180, description: 'Layered aurora ribbons sweep across the board.' },
+      { id: 'meteor', name: 'Meteor Shower', cost: 260, description: 'Meteors fall onto the board with glowing trails.' }
     ];
 
     const wins = [
@@ -1109,8 +1222,8 @@
     }
 
     function clearBoardWinEffects() {
-      boardElement.classList.remove('effect-ember', 'effect-aurora', 'effect-meteor');
-      boardElement.querySelectorAll('.win-particle').forEach((particle) => particle.remove());
+      boardElement.classList.remove('effect-classic', 'effect-ember', 'effect-aurora', 'effect-meteor');
+      boardElement.querySelectorAll('.win-particle, .ember-spark, .aurora-ribbon, .meteor').forEach((node) => node.remove());
       if (winEffectTimer) {
         clearTimeout(winEffectTimer);
         winEffectTimer = null;
@@ -1130,26 +1243,68 @@
       }
     }
 
+    function spawnEmberSparks(count) {
+      for (let i = 0; i < count; i += 1) {
+        const ember = document.createElement('span');
+        ember.className = 'ember-spark';
+        ember.style.setProperty('--x', `${8 + Math.random() * 84}%`);
+        ember.style.setProperty('--lift', `${Math.random() * 45}px`);
+        ember.style.setProperty('--c', ['#ffb566', '#ff7c57', '#ffd67a'][Math.floor(Math.random() * 3)]);
+        ember.style.animationDelay = `${Math.floor(Math.random() * 220)}ms`;
+        boardElement.appendChild(ember);
+      }
+    }
+
+    function spawnAuroraRibbons() {
+      const colors = ['#89f5ff', '#9ea8ff', '#5ff0bf', '#b39aff'];
+      for (let i = 0; i < 4; i += 1) {
+        const ribbon = document.createElement('span');
+        ribbon.className = 'aurora-ribbon';
+        ribbon.style.setProperty('--y', `${18 + i * 16}%`);
+        ribbon.style.setProperty('--c', colors[i % colors.length]);
+        ribbon.style.animationDelay = `${i * 95}ms`;
+        boardElement.appendChild(ribbon);
+      }
+    }
+
+    function spawnMeteors(count) {
+      for (let i = 0; i < count; i += 1) {
+        const meteor = document.createElement('span');
+        meteor.className = 'meteor';
+        meteor.style.setProperty('--x', `${8 + Math.random() * 84}%`);
+        meteor.style.setProperty('--dx', `${-18 + Math.random() * 36}px`);
+        meteor.style.setProperty('--delay', `${i * 75 + Math.floor(Math.random() * 70)}ms`);
+        meteor.style.setProperty('--c', ['#ffd35e', '#ffaf4d', '#fff2b5'][Math.floor(Math.random() * 3)]);
+        boardElement.appendChild(meteor);
+      }
+    }
+
     function triggerEquippedWinAnimation() {
       clearBoardWinEffects();
       const equipped = shopState.equipped || 'classic';
 
-      if (equipped === 'ember') {
+      if (equipped === 'classic') {
+        boardElement.classList.add('effect-classic');
+        spawnWinParticles(['#ffe38a', '#ffd067', '#fff2b5'], 18);
+      } else if (equipped === 'ember') {
         boardElement.classList.add('effect-ember');
-        spawnWinParticles(['#ffb566', '#ff7c57', '#ffd67a'], 24);
+        spawnEmberSparks(22);
+        spawnWinParticles(['#ffb566', '#ff7c57', '#ffd67a'], 16);
       } else if (equipped === 'aurora') {
         boardElement.classList.add('effect-aurora');
-        spawnWinParticles(['#89f5ff', '#9ea8ff', '#5ff0bf'], 26);
+        spawnAuroraRibbons();
+        spawnWinParticles(['#89f5ff', '#9ea8ff', '#5ff0bf'], 14);
       } else if (equipped === 'meteor') {
         boardElement.classList.add('effect-meteor');
-        spawnWinParticles(['#ffd35e', '#ffaf4d', '#fff2b5'], 32);
+        spawnMeteors(10);
+        spawnWinParticles(['#ffd35e', '#ffaf4d', '#fff2b5'], 20);
       } else {
         return;
       }
 
       winEffectTimer = setTimeout(() => {
         clearBoardWinEffects();
-      }, 950);
+      }, 1250);
     }
 
     function generateRoomCode() {
