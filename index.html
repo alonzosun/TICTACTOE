@@ -52,8 +52,10 @@
       display: flex;
       gap: 8px;
       margin-bottom: 12px;
+      flex-wrap: wrap;
     }
 
+    .mode,
     .difficulty,
     .start,
     .reset {
@@ -65,6 +67,7 @@
       height: 40px;
     }
 
+    .mode,
     .difficulty {
       flex: 1;
       padding: 0 10px;
@@ -116,10 +119,12 @@
       cursor: default;
     }
 
-    .cell:focus-visible,
+    .cell:focus-visible {
+      outline: none;
+    }
+
     .cell.selected {
-      outline: 3px solid #3b82f6;
-      outline-offset: 2px;
+      box-shadow: inset 0 0 0 3px rgba(28, 28, 28, 0.25);
       z-index: 1;
     }
 
@@ -158,6 +163,42 @@
       justify-content: center;
     }
 
+    .online {
+      display: none;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin: 0 0 12px;
+    }
+
+    .online.active {
+      display: grid;
+    }
+
+    .room-code,
+    .host,
+    .join {
+      border: 2px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      border-radius: 10px;
+      font-weight: 700;
+      height: 40px;
+      padding: 0 10px;
+    }
+
+    .host,
+    .join {
+      cursor: pointer;
+      padding: 0 12px;
+    }
+
+    .connection {
+      margin: 0 0 12px;
+      text-align: center;
+      font-size: 0.95rem;
+      min-height: 1.4em;
+    }
+
     @media (max-width: 700px) {
       body {
         padding: 12px;
@@ -175,13 +216,21 @@
 
       .difficulty,
       .start,
-      .reset {
+      .reset,
+      .mode,
+      .room-code,
+      .host,
+      .join {
         height: 48px;
         font-size: 1rem;
       }
 
       .board {
         gap: 8px;
+      }
+
+      .online {
+        grid-template-columns: 1fr;
       }
     }
 
@@ -198,6 +247,10 @@
     <h1>Alons Tic Tac</h1>
 
     <div class="setup">
+      <select id="mode" class="mode" aria-label="Game mode">
+        <option value="ai">VS AI</option>
+        <option value="online">Online 1v1</option>
+      </select>
       <select id="difficulty" class="difficulty" aria-label="AI difficulty">
         <option value="easy">Easy</option>
         <option value="medium">Medium</option>
@@ -206,6 +259,13 @@
       <button id="startBtn" class="start">Start</button>
     </div>
 
+    <div class="online" id="onlineControls">
+      <input id="roomCode" class="room-code" type="text" placeholder="Room code" aria-label="Room code" />
+      <button id="hostBtn" class="host">Host</button>
+      <button id="joinBtn" class="join">Join</button>
+    </div>
+
+    <p class="connection" id="connectionText" aria-live="polite"></p>
     <p class="status" id="status" aria-live="polite"></p>
 
     <section class="board" aria-label="Game board">
@@ -225,12 +285,19 @@
     </div>
   </main>
 
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script>
     const cells = Array.from(document.querySelectorAll('.cell'));
     const statusText = document.getElementById('status');
     const resetBtn = document.getElementById('resetBtn');
     const startBtn = document.getElementById('startBtn');
     const difficultySelect = document.getElementById('difficulty');
+    const modeSelect = document.getElementById('mode');
+    const onlineControls = document.getElementById('onlineControls');
+    const roomCodeInput = document.getElementById('roomCode');
+    const hostBtn = document.getElementById('hostBtn');
+    const joinBtn = document.getElementById('joinBtn');
+    const connectionText = document.getElementById('connectionText');
 
     const wins = [
       [0, 1, 2],
@@ -248,23 +315,27 @@
     let gameOver = false;
     let gameStarted = false;
     let difficulty = 'easy';
+    let mode = 'ai';
     let animatingReset = false;
     let aiMoveTimer = null;
     let audioCtx = null;
     let audioUnlocked = false;
     let selectedIndex = 0;
     let gamepadFrameId = null;
-    let previousPadState = {
-      up: false,
-      down: false,
-      left: false,
-      right: false,
-      select: false,
-      start: false
-    };
+    let previousPadState = { up: false, down: false, left: false, right: false, select: false, start: false };
+
+    let peer = null;
+    let conn = null;
+    let onlineConnected = false;
+    let isHost = false;
+    let myMark = 'X';
 
     function updateStatus(message) {
       statusText.textContent = message;
+    }
+
+    function updateConnection(message) {
+      connectionText.textContent = message;
     }
 
     function refreshSelectedCell() {
@@ -300,7 +371,6 @@
       }
 
       const finalizeUnlock = () => {
-        // Play an inaudible buffer once to satisfy strict mobile autoplay policies.
         const buffer = ctx.createBuffer(1, 1, 22050);
         const source = ctx.createBufferSource();
         source.buffer = buffer;
@@ -314,6 +384,10 @@
       } else {
         finalizeUnlock();
       }
+    }
+
+    function primeAudio() {
+      unlockAudio();
     }
 
     function playTone(frequency, duration, type, volume, when = 0) {
@@ -352,10 +426,6 @@
       });
     }
 
-    function primeAudio() {
-      unlockAudio();
-    }
-
     function getEmptyIndices(currentBoard) {
       return currentBoard
         .map((value, index) => (value === '' ? index : -1))
@@ -364,15 +434,10 @@
 
     function winnerForBoard(currentBoard) {
       for (const [a, b, c] of wins) {
-        if (
-          currentBoard[a] &&
-          currentBoard[a] === currentBoard[b] &&
-          currentBoard[b] === currentBoard[c]
-        ) {
+        if (currentBoard[a] && currentBoard[a] === currentBoard[b] && currentBoard[b] === currentBoard[c]) {
           return currentBoard[a];
         }
       }
-
       return getEmptyIndices(currentBoard).length === 0 ? 'draw' : null;
     }
 
@@ -388,7 +453,6 @@
       if (!board.includes('')) {
         return 'draw';
       }
-
       return null;
     }
 
@@ -465,6 +529,38 @@
       return minimax([...board], true, 0).index;
     }
 
+    function isHumanTurn() {
+      if (mode === 'online') {
+        return onlineConnected && player === myMark;
+      }
+      return player === 'X';
+    }
+
+    function updateTurnStatus() {
+      if (mode === 'online') {
+        if (!onlineConnected) {
+          updateStatus('Create or join a room to start online 1v1.');
+          return;
+        }
+        if (gameOver) {
+          return;
+        }
+        updateStatus(isHumanTurn() ? `Your turn (${myMark})` : `Opponent's turn (${player})`);
+        return;
+      }
+
+      if (gameOver) {
+        return;
+      }
+      updateStatus(player === 'X' ? `Difficulty: ${difficulty}. Your turn (X)` : 'AI is thinking...');
+    }
+
+    function sendOnlineMessage(payload) {
+      if (mode === 'online' && conn && conn.open) {
+        conn.send(payload);
+      }
+    }
+
     function animatePiecesFallAndRestart() {
       animatingReset = true;
       const fallingCells = [...cells];
@@ -475,7 +571,6 @@
         cell.classList.remove('fall');
       });
 
-      // Reflow guarantees animation restarts reliably for every tile each round.
       document.body.offsetHeight;
 
       fallingCells.forEach((cell, i) => {
@@ -489,8 +584,13 @@
 
       setTimeout(() => {
         resetBoard();
-        updateStatus(`Difficulty: ${difficulty}. Your turn (X)`);
-        setBoardDisabled(false);
+        player = 'X';
+        updateTurnStatus();
+        if (mode === 'online') {
+          setBoardDisabled(!isHumanTurn());
+        } else {
+          setBoardDisabled(false);
+        }
       }, restartAfter);
     }
 
@@ -499,22 +599,28 @@
       setBoardDisabled(true);
 
       if (result === 'draw') {
-        updateStatus('Draw. Press New Game or Start to play again.');
+        updateStatus('Draw! New round starts now.');
+        animatePiecesFallAndRestart();
         return;
       }
 
-      if (result === 'X') {
+      const won = mode === 'online' ? result === myMark : result === 'X';
+      if (won) {
         updateStatus('You win!');
         playWinCheer();
       } else {
-        updateStatus('AI wins!');
+        updateStatus(mode === 'online' ? 'You lose!' : 'AI wins!');
         playLoseHonk();
       }
 
       animatePiecesFallAndRestart();
     }
 
-    function applyMove(index, mark) {
+    function applyMove(index, mark, fromRemote = false) {
+      if (board[index] || mark !== player || gameOver || animatingReset) {
+        return false;
+      }
+
       board[index] = mark;
       const cell = cells[index];
       cell.textContent = mark;
@@ -524,17 +630,29 @@
       const result = checkWinner();
       if (result) {
         endGame(result);
-        return;
+      } else {
+        player = mark === 'X' ? 'O' : 'X';
+        updateTurnStatus();
       }
 
-      player = mark === 'X' ? 'O' : 'X';
-      if (!gameOver) {
-        updateStatus(player === 'X' ? `Difficulty: ${difficulty}. Your turn (X)` : 'AI is thinking...');
+      if (mode === 'online' && !fromRemote) {
+        sendOnlineMessage({ type: 'move', index, mark });
       }
+
+      if (!gameOver) {
+        if (mode === 'ai' && player === 'O') {
+          setBoardDisabled(true);
+          aiMoveTimer = setTimeout(aiMove, 380);
+        } else {
+          setBoardDisabled(!isHumanTurn());
+        }
+      }
+
+      return true;
     }
 
     function aiMove() {
-      if (!gameStarted || gameOver || animatingReset || player !== 'O') {
+      if (!gameStarted || gameOver || animatingReset || mode !== 'ai' || player !== 'O') {
         return;
       }
 
@@ -542,14 +660,10 @@
       if (typeof move === 'number') {
         applyMove(move, 'O');
       }
-
-      if (!gameOver) {
-        setBoardDisabled(false);
-      }
     }
 
     function onCellClick(event) {
-      if (!gameStarted || gameOver || animatingReset || player !== 'X') {
+      if (!gameStarted || gameOver || animatingReset || !isHumanTurn()) {
         return;
       }
       primeAudio();
@@ -558,15 +672,10 @@
       const index = Number(cell.dataset.index);
       setSelectedIndex(index);
 
-      if (board[index]) {
-        return;
-      }
-
-      applyMove(index, 'X');
-
-      if (!gameOver) {
-        setBoardDisabled(true);
-        aiMoveTimer = setTimeout(aiMove, 380);
+      if (mode === 'online') {
+        applyMove(index, myMark);
+      } else {
+        applyMove(index, 'X');
       }
     }
 
@@ -596,6 +705,182 @@
       setSelectedIndex(firstEmpty >= 0 ? firstEmpty : 0);
     }
 
+    function disconnectOnline() {
+      if (conn) {
+        try {
+          conn.close();
+        } catch (err) {}
+        conn = null;
+      }
+      if (peer) {
+        try {
+          peer.destroy();
+        } catch (err) {}
+        peer = null;
+      }
+      onlineConnected = false;
+      isHost = false;
+      updateConnection('');
+    }
+
+    function setupConnHandlers(newConn) {
+      conn = newConn;
+
+      conn.on('open', () => {
+        onlineConnected = true;
+        gameStarted = true;
+        resetBoard();
+        updateConnection(`Connected. You are ${myMark}.`);
+        updateTurnStatus();
+        setBoardDisabled(!isHumanTurn());
+      });
+
+      conn.on('data', (msg) => {
+        if (!msg || typeof msg !== 'object') {
+          return;
+        }
+
+        if (msg.type === 'move' && typeof msg.index === 'number' && (msg.mark === 'X' || msg.mark === 'O')) {
+          applyMove(msg.index, msg.mark, true);
+        } else if (msg.type === 'reset') {
+          resetBoard();
+          player = 'X';
+          updateTurnStatus();
+          setBoardDisabled(!isHumanTurn());
+        }
+      });
+
+      conn.on('close', () => {
+        onlineConnected = false;
+        gameStarted = false;
+        setBoardDisabled(true);
+        updateConnection('Disconnected. Host or join again.');
+        updateStatus('Online session ended.');
+      });
+    }
+
+    function hostOnlineGame() {
+      primeAudio();
+      mode = 'online';
+      modeSelect.value = 'online';
+      updateModeUi();
+
+      disconnectOnline();
+      isHost = true;
+      myMark = 'X';
+      updateConnection('Creating room...');
+
+      if (typeof Peer === 'undefined') {
+        updateConnection('Online service unavailable right now.');
+        return;
+      }
+
+      peer = new Peer();
+      peer.on('open', (id) => {
+        roomCodeInput.value = id;
+        updateConnection('Room ready. Share this code and wait for opponent.');
+      });
+      peer.on('connection', (incoming) => {
+        if (conn && conn.open) {
+          incoming.close();
+          return;
+        }
+        setupConnHandlers(incoming);
+      });
+      peer.on('error', () => {
+        updateConnection('Could not host room. Try again.');
+      });
+    }
+
+    function joinOnlineGame() {
+      primeAudio();
+      const roomCode = roomCodeInput.value.trim();
+      if (!roomCode) {
+        updateConnection('Enter a room code first.');
+        return;
+      }
+
+      mode = 'online';
+      modeSelect.value = 'online';
+      updateModeUi();
+
+      disconnectOnline();
+      isHost = false;
+      myMark = 'O';
+      updateConnection('Joining room...');
+
+      if (typeof Peer === 'undefined') {
+        updateConnection('Online service unavailable right now.');
+        return;
+      }
+
+      peer = new Peer();
+      peer.on('open', () => {
+        const outgoing = peer.connect(roomCode, { reliable: true });
+        setupConnHandlers(outgoing);
+      });
+      peer.on('error', () => {
+        updateConnection('Could not join room. Check code and try again.');
+      });
+    }
+
+    function startGame() {
+      primeAudio();
+      if (mode !== 'ai') {
+        updateStatus('Use Host/Join for online mode.');
+        return;
+      }
+
+      difficulty = difficultySelect.value;
+      gameStarted = true;
+      resetBoard();
+      player = 'X';
+      updateTurnStatus();
+      setBoardDisabled(false);
+    }
+
+    function manualNewGame() {
+      if (!gameStarted) {
+        updateStatus(mode === 'ai' ? 'Choose difficulty and press Start.' : 'Host or join a room first.');
+        return;
+      }
+      if (animatingReset) {
+        return;
+      }
+
+      resetBoard();
+      player = 'X';
+      updateTurnStatus();
+
+      if (mode === 'online') {
+        sendOnlineMessage({ type: 'reset' });
+        setBoardDisabled(!isHumanTurn());
+      } else {
+        setBoardDisabled(false);
+      }
+    }
+
+    function updateModeUi() {
+      mode = modeSelect.value;
+      const online = mode === 'online';
+
+      onlineControls.classList.toggle('active', online);
+      difficultySelect.disabled = online;
+      startBtn.disabled = online;
+
+      if (online) {
+        updateStatus('Create or join a room to start online 1v1.');
+        setBoardDisabled(true);
+      } else {
+        disconnectOnline();
+        gameStarted = false;
+        resetBoard();
+        updateConnection('');
+        updateStatus('Choose difficulty and press Start.');
+        setBoardDisabled(true);
+      }
+    }
+
     function moveSelection(deltaRow, deltaCol) {
       const row = Math.floor(selectedIndex / 3);
       const col = selectedIndex % 3;
@@ -605,7 +890,7 @@
     }
 
     function activateSelectedCell() {
-      if (!gameStarted || gameOver || animatingReset || player !== 'X') {
+      if (!gameStarted || gameOver || animatingReset || !isHumanTurn()) {
         return;
       }
       const cell = cells[selectedIndex];
@@ -680,44 +965,30 @@
       gamepadFrameId = requestAnimationFrame(pollGamepad);
     }
 
-    function startGame() {
-      primeAudio();
-      if (gameStarted && !gameOver && !animatingReset) {
-        updateStatus('Finish the current game before starting a new one.');
-        return;
-      }
-      difficulty = difficultySelect.value;
-      gameStarted = true;
-      resetBoard();
-      updateStatus(`Difficulty: ${difficulty}. Your turn (X)`);
-      setBoardDisabled(false);
-    }
-
-    function manualNewGame() {
-      if (!gameStarted) {
-        updateStatus('Choose difficulty and press Start.');
-        return;
-      }
-      if (!gameOver && !animatingReset) {
-        updateStatus('Finish the current game before starting a new one.');
-        return;
-      }
-
-      resetBoard();
-      updateStatus(`Difficulty: ${difficulty}. Your turn (X)`);
-      setBoardDisabled(false);
-    }
-
     cells.forEach((cell) => {
       cell.addEventListener('click', onCellClick);
     });
 
     startBtn.addEventListener('click', startGame);
     resetBtn.addEventListener('click', manualNewGame);
+    hostBtn.addEventListener('click', hostOnlineGame);
+    joinBtn.addEventListener('click', joinOnlineGame);
+
+    difficultySelect.addEventListener('change', () => {
+      difficulty = difficultySelect.value;
+      if (mode === 'ai' && gameStarted) {
+        resetBoard();
+        updateTurnStatus();
+        setBoardDisabled(false);
+      }
+    });
+
+    modeSelect.addEventListener('change', updateModeUi);
     document.addEventListener('keydown', handleKeyboard);
     document.addEventListener('pointerdown', unlockAudio, { passive: true });
     document.addEventListener('touchstart', unlockAudio, { passive: true });
 
+    updateConnection('');
     updateStatus('Choose difficulty and press Start.');
     setBoardDisabled(true);
     refreshSelectedCell();
@@ -727,3 +998,4 @@
   </script>
 </body>
 </html>
+
