@@ -1778,62 +1778,28 @@
 
     function getRankTierByElo(elo) {
       if (elo < 900) {
-        return { id: 'bronze', name: 'Bronze', digitMin: 0, digitMax: 1 };
+        return { id: 'bronze', name: 'Bronze' };
       }
       if (elo < 1100) {
-        return { id: 'silver', name: 'Silver', digitMin: 2, digitMax: 3 };
+        return { id: 'silver', name: 'Silver' };
       }
       if (elo < 1300) {
-        return { id: 'gold', name: 'Gold', digitMin: 4, digitMax: 5 };
+        return { id: 'gold', name: 'Gold' };
       }
       if (elo < 1550) {
-        return { id: 'platinum', name: 'Platinum', digitMin: 6, digitMax: 7 };
+        return { id: 'platinum', name: 'Platinum' };
       }
-      return { id: 'diamond', name: 'Diamond', digitMin: 8, digitMax: 9 };
-    }
-
-    function rankTierForCodeDigit(digitChar) {
-      const digit = Number(digitChar);
-      if (!Number.isInteger(digit) || digit < 0 || digit > 9) {
-        return null;
-      }
-      if (digit <= 1) {
-        return 'bronze';
-      }
-      if (digit <= 3) {
-        return 'silver';
-      }
-      if (digit <= 5) {
-        return 'gold';
-      }
-      if (digit <= 7) {
-        return 'platinum';
-      }
-      return 'diamond';
-    }
-
-    function generateRankedRoomCode() {
-      const tier = getRankTierByElo(rankedElo);
-      const tierDigit = tier.digitMin + Math.floor(Math.random() * (tier.digitMax - tier.digitMin + 1));
-      const suffix = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
-      return `${tierDigit}${suffix}`;
+      return { id: 'diamond', name: 'Diamond' };
     }
 
     function roomCodeToPeerId(code) {
       return `${ROOM_ID_PREFIX}${code}`;
     }
 
-    function parseRoomCodeInput(value, rankedMode = false) {
+    function parseRoomCodeInput(value) {
       const normalized = value.trim();
       if (!/^\d{4}$/.test(normalized)) {
         return null;
-      }
-      if (rankedMode) {
-        const myTier = getRankTierByElo(rankedElo);
-        const codeTier = rankTierForCodeDigit(normalized[0]);
-        if (codeTier !== myTier.id) {
-          return null;
-        }
       }
       return normalized;
     }
@@ -2579,17 +2545,11 @@
         return;
       }
 
-      const rankedMode = gameVariant === 'ranked';
-      const roomCode = rankedMode ? generateRankedRoomCode() : generateRoomCode();
+      const roomCode = generateRoomCode();
       peer = new Peer(roomCodeToPeerId(roomCode));
       peer.on('open', () => {
         roomCodeInput.value = roomCode;
-        if (rankedMode) {
-          const tier = getRankTierByElo(rankedElo);
-          updateConnection(`Ranked room ready (${tier.name}). Share this 4-digit code: ${roomCode}`);
-        } else {
-          updateConnection('Room ready. Share this code and wait for opponent.');
-        }
+        updateConnection('Room ready. Share this code and wait for opponent.');
       });
       peer.on('connection', (incoming) => {
         if (conn && conn.open) {
@@ -2613,15 +2573,9 @@
         return;
       }
       primeAudio();
-      const rankedMode = gameVariant === 'ranked';
-      const roomCode = parseRoomCodeInput(roomCodeInput.value, rankedMode);
+      const roomCode = parseRoomCodeInput(roomCodeInput.value);
       if (!roomCode) {
-        if (rankedMode) {
-          const tier = getRankTierByElo(rankedElo);
-          updateConnection(`Enter a valid 4-digit code from your tier (${tier.name}).`);
-        } else {
-          updateConnection('Enter a valid 4-digit room code.');
-        }
+        updateConnection('Enter a valid 4-digit room code.');
         return;
       }
 
