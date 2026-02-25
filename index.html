@@ -1115,8 +1115,12 @@
     const LOSUN_STORAGE_KEY = 'alons_tic_losun';
     const PROFILE_STORAGE_KEY = 'alons_tic_profile';
     const SHOP_STORAGE_KEY = 'alons_tic_shop';
+    const ELO_STORAGE_KEY = 'alons_tic_ranked_elo';
     const ROOM_ID_PREFIX = 'tictac-';
     const OWNER_ADMIN_CODE = 'alonzosun';
+    const DEFAULT_RANKED_ELO = 1000;
+    const MIN_RANKED_ELO = 100;
+    const MAX_RANKED_ELO = 3000;
 
     const WIN_ANIMATIONS = [
       { id: 'classic', name: 'Classic Cheer', cost: 0, description: 'Golden celebratory burst over the board.' },
@@ -1152,7 +1156,10 @@
     let onlineStarterAssigned = false;
     let isHost = false;
     let myMark = 'X';
+    let opponentName = 'Opponent';
+    let opponentRankedElo = DEFAULT_RANKED_ELO;
     let losun = 0;
+    let rankedElo = DEFAULT_RANKED_ELO;
     let profile = { username: 'Player', games: 0, wins: 0, losses: 0, draws: 0 };
     let shopState = { owned: { classic: true }, equipped: 'classic' };
     let adminUnlocked = false;
@@ -1222,7 +1229,10 @@
         rankedScoreText.textContent = '';
         return;
       }
-      rankedScoreText.textContent = `Ranked First to ${rankedTargetWins}  |  You ${rankedScore.x} - ${rankedScore.o} AI`;
+      const myWins = myMark === 'X' ? rankedScore.x : rankedScore.o;
+      const oppWins = myMark === 'X' ? rankedScore.o : rankedScore.x;
+      const myTier = getRankTierByElo(rankedElo);
+      rankedScoreText.textContent = `Ranked First to ${rankedTargetWins}  |  ${myTier.name} ${rankedElo} ELO  |  You ${myWins} - ${oppWins} ${opponentName}`;
     }
 
     function renderBoardCells() {
@@ -1424,24 +1434,23 @@
 
     function openRankedScreen() {
       setVariant('ranked');
-      mode = 'ai';
-      modeSelect.value = 'ai';
+      mode = 'online';
+      modeSelect.value = 'online';
       modeSelect.disabled = true;
-      difficulty = 'hard';
-      difficultySelect.value = 'hard';
+      opponentName = 'Opponent';
+      opponentRankedElo = DEFAULT_RANKED_ELO;
       onlineControls.classList.remove('active');
       difficultySelect.disabled = true;
       startBtn.disabled = false;
       rankedScore = { x: 0, o: 0 };
       updateRankedScoreUi();
       setActiveScreen('board');
-      updateConnection('Ranked mode: Connect 4 on 5x5, first to 3 rounds.');
-      gameStarted = true;
-      gameOver = false;
+      updateConnection('Ranked mode: host or join a room. Matchmaking pairs nearby ELO buckets.');
+      gameStarted = false;
       resetBoard();
-      player = 'X';
       updateTurnStatus();
-      setBoardDisabled(false);
+      setBoardDisabled(true);
+      updateModeUi();
     }
 
     function openShopScreen() {
@@ -1750,16 +1759,95 @@
       return String(Math.floor(Math.random() * 10000)).padStart(4, '0');
     }
 
+    function getRankTierByElo(elo) {
+      if (elo < 900) {
+        return { id: 'bronze', name: 'Bronze', digitMin: 0, digitMax: 1 };
+      }
+      if (elo < 1100) {
+        return { id: 'silver', name: 'Silver', digitMin: 2, digitMax: 3 };
+      }
+      if (elo < 1300) {
+        return { id: 'gold', name: 'Gold', digitMin: 4, digitMax: 5 };
+      }
+      if (elo < 1550) {
+        return { id: 'platinum', name: 'Platinum', digitMin: 6, digitMax: 7 };
+      }
+      return { id: 'diamond', name: 'Diamond', digitMin: 8, digitMax: 9 };
+    }
+
+    function rankTierForCodeDigit(digitChar) {
+      const digit = Number(digitChar);
+      if (!Number.isInteger(digit) || digit < 0 || digit > 9) {
+        return null;
+      }
+      if (digit <= 1) {
+        return 'bronze';
+      }
+      if (digit <= 3) {
+        return 'silver';
+      }
+      if (digit <= 5) {
+        return 'gold';
+      }
+      if (digit <= 7) {
+        return 'platinum';
+      }
+      return 'diamond';
+    }
+
+    function generateRankedRoomCode() {
+      const tier = getRankTierByElo(rankedElo);
+      const tierDigit = tier.digitMin + Math.floor(Math.random() * (tier.digitMax - tier.digitMin + 1));
+      const suffix = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+      return `${tierDigit}${suffix}`;
+    }
+
     function roomCodeToPeerId(code) {
       return `${ROOM_ID_PREFIX}${code}`;
     }
 
-    function parseRoomCodeInput(value) {
+    function parseRoomCodeInput(value, rankedMode = false) {
       const normalized = value.trim();
       if (!/^\d{4}$/.test(normalized)) {
         return null;
       }
+      if (rankedMode) {
+        const myTier = getRankTierByElo(rankedElo);
+        const codeTier = rankTierForCodeDigit(normalized[0]);
+        if (codeTier !== myTier.id) {
+          return null;
+        }
+      }
       return normalized;
+    }
+
+    function saveRankedElo() {
+      try {
+        localStorage.setItem(ELO_STORAGE_KEY, String(rankedElo));
+      } catch (err) {}
+      updateRankedScoreUi();
+    }
+
+    function loadRankedElo() {
+      try {
+        const rawValue = localStorage.getItem(ELO_STORAGE_KEY);
+        const parsed = Number(rawValue);
+        if (Number.isFinite(parsed)) {
+          rankedElo = Math.max(MIN_RANKED_ELO, Math.min(MAX_RANKED_ELO, Math.floor(parsed)));
+        } else {
+          rankedElo = DEFAULT_RANKED_ELO;
+        }
+      } catch (err) {
+        rankedElo = DEFAULT_RANKED_ELO;
+      }
+    }
+
+    function applyRankedEloResult(actualScore) {
+      const expected = 1 / (1 + (10 ** ((opponentRankedElo - rankedElo) / 400)));
+      const k = 28;
+      rankedElo = Math.max(MIN_RANKED_ELO, Math.min(MAX_RANKED_ELO, Math.round(rankedElo + k * (actualScore - expected))));
+      saveRankedElo();
+      sendOnlineMessage({ type: 'ranked-elo-update', elo: rankedElo });
     }
 
     function addLosun(amount) {
@@ -1902,41 +1990,6 @@
       return null;
     }
 
-    function pickRankedAiMove() {
-      const empty = getEmptyIndices(board);
-      const tryMove = (mark) => {
-        for (const idx of empty) {
-          const simulated = [...board];
-          simulated[idx] = mark;
-          if (winnerForBoard(simulated) === mark) {
-            return idx;
-          }
-        }
-        return null;
-      };
-
-      const winNow = tryMove('O');
-      if (typeof winNow === 'number') {
-        return winNow;
-      }
-      const blockNow = tryMove('X');
-      if (typeof blockNow === 'number') {
-        return blockNow;
-      }
-
-      const center = (boardSize - 1) / 2;
-      const prioritized = [...empty].sort((a, b) => {
-        const ax = a % boardSize;
-        const ay = Math.floor(a / boardSize);
-        const bx = b % boardSize;
-        const by = Math.floor(b / boardSize);
-        const ad = Math.abs(ax - center) + Math.abs(ay - center);
-        const bd = Math.abs(bx - center) + Math.abs(by - center);
-        return ad - bd;
-      });
-      return prioritized[0];
-    }
-
     function setBoardDisabled(disabled) {
       cells.forEach((cell) => {
         const idx = Number(cell.dataset.index);
@@ -1996,10 +2049,6 @@
     }
 
     function pickAiMove() {
-      if (gameVariant === 'ranked') {
-        return pickRankedAiMove();
-      }
-
       if (difficulty === 'easy') {
         return pickRandomMove();
       }
@@ -2039,10 +2088,6 @@
       }
 
       if (gameOver) {
-        return;
-      }
-      if (gameVariant === 'ranked') {
-        updateStatus(player === 'X' ? 'Ranked: your turn (X)' : 'Ranked: AI thinking...');
         return;
       }
       updateStatus(player === 'X' ? `Difficulty: ${difficulty}. Your turn (X)` : 'AI is thinking...');
@@ -2100,11 +2145,17 @@
 
       setTimeout(() => {
         resetBoard();
-        player = 'X';
-        updateTurnStatus();
         if (mode === 'online') {
-          setBoardDisabled(!isHumanTurn());
+          onlineStarterAssigned = false;
+          if (isHost) {
+            assignRandomOnlineStarter(true);
+          } else {
+            updateTurnStatus();
+            setBoardDisabled(true);
+          }
         } else {
+          player = 'X';
+          updateTurnStatus();
           setBoardDisabled(false);
         }
       }, restartAfter);
@@ -2119,31 +2170,46 @@
           updateStatus('Ranked round draw. Replay round.');
           setTimeout(() => {
             resetBoard();
-            player = 'X';
             gameOver = false;
-            updateTurnStatus();
-            setBoardDisabled(false);
+            onlineStarterAssigned = false;
+            if (isHost) {
+              assignRandomOnlineStarter(true);
+            } else {
+              updateTurnStatus();
+              setBoardDisabled(true);
+            }
           }, 700);
           return;
         }
 
-        const youWonRound = result === 'X';
+        const youWonRound = result === myMark;
         if (youWonRound) {
-          rankedScore.x += 1;
+          if (result === 'X') {
+            rankedScore.x += 1;
+          } else {
+            rankedScore.o += 1;
+          }
           triggerWinScoreEffect();
           triggerEquippedWinAnimation();
           shouldMeteorShatter = shopState.equipped === 'meteor';
           playWinCheer();
         } else {
-          rankedScore.o += 1;
+          if (result === 'X') {
+            rankedScore.x += 1;
+          } else {
+            rankedScore.o += 1;
+          }
           playLoseHonk();
         }
         updateRankedScoreUi();
 
         if (rankedScore.x >= rankedTargetWins || rankedScore.o >= rankedTargetWins) {
           gameStarted = false;
-          const winnerLabel = rankedScore.x > rankedScore.o ? 'You' : 'AI';
-          updateStatus(`Ranked match over: ${winnerLabel} won ${rankedScore.x}-${rankedScore.o}.`);
+          const iWonMatch = (myMark === 'X' ? rankedScore.x : rankedScore.o) > (myMark === 'X' ? rankedScore.o : rankedScore.x);
+          applyRankedEloResult(iWonMatch ? 1 : 0);
+          const yourWins = myMark === 'X' ? rankedScore.x : rankedScore.o;
+          const oppWins = myMark === 'X' ? rankedScore.o : rankedScore.x;
+          updateStatus(`Ranked match over: ${iWonMatch ? 'you won' : `${opponentName} won`} ${yourWins}-${oppWins}.`);
           setBoardDisabled(true);
           return;
         }
@@ -2304,6 +2370,9 @@
       onlineConnected = false;
       onlineStarterAssigned = false;
       isHost = false;
+      opponentName = 'Opponent';
+      opponentRankedElo = DEFAULT_RANKED_ELO;
+      updateRankedScoreUi();
       updateConnection('');
     }
 
@@ -2315,7 +2384,17 @@
         gameStarted = true;
         onlineStarterAssigned = false;
         resetBoard();
+        sendOnlineMessage({
+          type: 'hello',
+          username: profile.username,
+          rankedElo,
+          ranked: gameVariant === 'ranked'
+        });
         updateConnection(`Connected. You are ${myMark}.`);
+        if (gameVariant === 'ranked') {
+          const tier = getRankTierByElo(rankedElo);
+          updateConnection(`Ranked connected. You are ${myMark}. ${tier.name} ${rankedElo} ELO.`);
+        }
         if (isHost) {
           assignRandomOnlineStarter(true);
         } else {
@@ -2331,6 +2410,20 @@
 
         if (msg.type === 'move' && typeof msg.index === 'number' && (msg.mark === 'X' || msg.mark === 'O')) {
           applyMove(msg.index, msg.mark, true);
+        } else if (msg.type === 'hello') {
+          if (typeof msg.username === 'string' && msg.username.trim()) {
+            opponentName = sanitizeUsername(msg.username);
+          }
+          if (Number.isFinite(Number(msg.rankedElo))) {
+            opponentRankedElo = Math.max(MIN_RANKED_ELO, Math.min(MAX_RANKED_ELO, Math.floor(Number(msg.rankedElo))));
+          } else {
+            opponentRankedElo = DEFAULT_RANKED_ELO;
+          }
+          updateRankedScoreUi();
+          if (gameVariant === 'ranked') {
+            const oppTier = getRankTierByElo(opponentRankedElo);
+            updateConnection(`Ranked connected. You are ${myMark}. Opponent ${opponentName} is ${oppTier.name} ${opponentRankedElo} ELO.`);
+          }
         } else if (msg.type === 'reset') {
           onlineStarterAssigned = false;
           resetBoard();
@@ -2345,6 +2438,9 @@
           onlineStarterAssigned = true;
           updateTurnStatus();
           setBoardDisabled(!isHumanTurn());
+        } else if (msg.type === 'ranked-elo-update' && Number.isFinite(Number(msg.elo))) {
+          opponentRankedElo = Math.max(MIN_RANKED_ELO, Math.min(MAX_RANKED_ELO, Math.floor(Number(msg.elo))));
+          updateRankedScoreUi();
         }
       });
 
@@ -2373,11 +2469,17 @@
         return;
       }
 
-      const roomCode = generateRoomCode();
+      const rankedMode = gameVariant === 'ranked';
+      const roomCode = rankedMode ? generateRankedRoomCode() : generateRoomCode();
       peer = new Peer(roomCodeToPeerId(roomCode));
       peer.on('open', () => {
         roomCodeInput.value = roomCode;
-        updateConnection('Room ready. Share this code and wait for opponent.');
+        if (rankedMode) {
+          const tier = getRankTierByElo(rankedElo);
+          updateConnection(`Ranked room ready (${tier.name}). Share this 4-digit code: ${roomCode}`);
+        } else {
+          updateConnection('Room ready. Share this code and wait for opponent.');
+        }
       });
       peer.on('connection', (incoming) => {
         if (conn && conn.open) {
@@ -2397,9 +2499,15 @@
 
     function joinOnlineGame() {
       primeAudio();
-      const roomCode = parseRoomCodeInput(roomCodeInput.value);
+      const rankedMode = gameVariant === 'ranked';
+      const roomCode = parseRoomCodeInput(roomCodeInput.value, rankedMode);
       if (!roomCode) {
-        updateConnection('Enter a valid 4-digit room code.');
+        if (rankedMode) {
+          const tier = getRankTierByElo(rankedElo);
+          updateConnection(`Enter a valid 4-digit code from your tier (${tier.name}).`);
+        } else {
+          updateConnection('Enter a valid 4-digit room code.');
+        }
         return;
       }
 
@@ -2430,7 +2538,7 @@
     function startGame() {
       primeAudio();
       if (gameVariant === 'ranked') {
-        openRankedScreen();
+        updateStatus('Ranked is real-player only. Use Host or Join.');
         return;
       }
       if (mode !== 'ai') {
@@ -2449,7 +2557,7 @@
     function manualNewGame() {
       if (!gameStarted) {
         updateStatus(mode === 'ai'
-          ? (gameVariant === 'ranked' ? 'Press Ranked to start a match.' : 'Choose difficulty and press Start.')
+          ? 'Choose difficulty and press Start.'
           : 'Host or join a room first.');
         return;
       }
@@ -2484,22 +2592,30 @@
       mode = modeSelect.value;
       const online = mode === 'online';
       const ranked = gameVariant === 'ranked';
+      const forceOnline = ranked;
+      const activeOnline = forceOnline ? true : online;
 
-      onlineControls.classList.toggle('active', online);
+      if (forceOnline) {
+        mode = 'online';
+        modeSelect.value = 'online';
+      }
+      onlineControls.classList.toggle('active', activeOnline);
       modeSelect.disabled = ranked;
-      difficultySelect.disabled = online || ranked;
-      startBtn.disabled = online;
+      difficultySelect.disabled = activeOnline || ranked;
+      startBtn.disabled = activeOnline;
 
-      if (online) {
+      if (activeOnline) {
         onlineStarterAssigned = false;
-        updateStatus('Create or join a room to start online 1v1.');
+        updateStatus(ranked
+          ? 'Ranked: host or join a room in your ELO tier.'
+          : 'Create or join a room to start online 1v1.');
         setBoardDisabled(true);
       } else {
         disconnectOnline();
         gameStarted = false;
         resetBoard();
         updateConnection('');
-        updateStatus(ranked ? 'Ranked ready. First to 3 rounds.' : 'Choose difficulty and press Start.');
+        updateStatus('Choose difficulty and press Start.');
         setBoardDisabled(true);
       }
     }
@@ -2636,6 +2752,7 @@
     setVariant('classic');
     loadProfile();
     loadLosun();
+    loadRankedElo();
     loadShopState();
     updateAdminUi();
     window.spendLosun = spendLosun;
