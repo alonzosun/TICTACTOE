@@ -32,6 +32,40 @@
       color: var(--text);
       font-family: "Quicksand", "Segoe UI", sans-serif;
       padding: 20px;
+      transition: background 220ms ease, color 220ms ease;
+    }
+
+    body.pre-start-dark {
+      background: radial-gradient(circle at top left, #1f2937, #0b1220);
+      color: #eef2ff;
+    }
+
+    body.pre-start-dark .game {
+      background: #111827;
+      border-color: #334155;
+      color: #eef2ff;
+      box-shadow: 0 14px 28px rgba(0, 0, 0, 0.45);
+    }
+
+    body.pre-start-dark .mode,
+    body.pre-start-dark .difficulty,
+    body.pre-start-dark .start,
+    body.pre-start-dark .reset,
+    body.pre-start-dark .room-code,
+    body.pre-start-dark .host,
+    body.pre-start-dark .join,
+    body.pre-start-dark .cell {
+      background: #0f172a;
+      color: #e2e8f0;
+      border-color: #475569;
+    }
+
+    body.pre-start-dark .cell:hover:enabled {
+      background: #1e293b;
+    }
+
+    body.pre-start-dark .site-footer {
+      color: rgba(226, 232, 240, 0.8);
     }
 
     .page {
@@ -303,7 +337,7 @@
     </div>
     </main>
   </div>
-  <footer class="site-footer">Version v1.1</footer>
+  <footer class="site-footer">Version v1.2</footer>
 
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script>
@@ -356,6 +390,10 @@
 
     function updateConnection(message) {
       connectionText.textContent = message;
+    }
+
+    function updateThemeByState() {
+      document.body.classList.toggle('pre-start-dark', !gameStarted);
     }
 
     function refreshSelectedCell() {
@@ -749,6 +787,7 @@
       conn.on('open', () => {
         onlineConnected = true;
         gameStarted = true;
+        updateThemeByState();
         resetBoard();
         updateConnection(`Connected. You are ${myMark}.`);
         updateTurnStatus();
@@ -773,6 +812,7 @@
       conn.on('close', () => {
         onlineConnected = false;
         gameStarted = false;
+        updateThemeByState();
         setBoardDisabled(true);
         updateConnection('Disconnected. Host or join again.');
         updateStatus('Online session ended.');
@@ -855,6 +895,7 @@
 
       difficulty = difficultySelect.value;
       gameStarted = true;
+      updateThemeByState();
       resetBoard();
       player = 'X';
       updateTurnStatus();
@@ -891,11 +932,14 @@
       startBtn.disabled = online;
 
       if (online) {
+        gameStarted = false;
+        updateThemeByState();
         updateStatus('Create or join a room to start online 1v1.');
         setBoardDisabled(true);
       } else {
         disconnectOnline();
         gameStarted = false;
+        updateThemeByState();
         resetBoard();
         updateConnection('');
         updateStatus('Choose difficulty and press Start.');
@@ -1015,6 +1059,7 @@
 
     updateConnection('');
     updateStatus('Choose difficulty and press Start.');
+    updateThemeByState();
     setBoardDisabled(true);
     refreshSelectedCell();
     if (!gamepadFrameId) {
