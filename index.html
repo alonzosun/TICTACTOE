@@ -83,6 +83,45 @@
       font-size: 0.98rem;
     }
 
+    .profile {
+      border: 2px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      padding: 10px;
+      margin: 0 0 12px;
+    }
+
+    .profile-label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+    }
+
+    .profile-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .username-input {
+      flex: 1;
+      border: 2px solid var(--line);
+      border-radius: 10px;
+      height: 40px;
+      padding: 0 10px;
+      font-weight: 700;
+      font-family: inherit;
+    }
+
+    .profile-help,
+    .profile-stats {
+      margin: 8px 0 0;
+      text-align: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      opacity: 0.85;
+    }
+
     .setup {
       display: flex;
       gap: 8px;
@@ -281,6 +320,17 @@
   <section class="game" id="menuScreen" aria-label="Main menu">
     <h1>Alons Tic Tac</h1>
     <p class="wallet" aria-live="polite">Losun: <span id="losunValue">0</span></p>
+    <div class="profile" aria-label="Player profile">
+      <label for="usernameInput" class="profile-label">Username</label>
+      <div class="profile-row">
+        <input id="usernameInput" class="username-input" type="text" maxlength="16" placeholder="Enter username" />
+        <button id="saveProfileBtn" class="start">Save</button>
+      </div>
+      <p class="profile-help">Saved on this device. No email required.</p>
+      <p class="profile-stats">
+        Games <span id="gamesCount">0</span> | Wins <span id="winsCount">0</span> | Losses <span id="lossesCount">0</span> | Draws <span id="drawsCount">0</span>
+      </p>
+    </div>
     <div class="menu-actions">
       <button id="playMenuBtn" class="menu-btn">Play</button>
       <button id="shopMenuBtn" class="menu-btn">Shop</button>
@@ -359,8 +409,15 @@
     const shopMenuBtn = document.getElementById('shopMenuBtn');
     const shopBackBtn = document.getElementById('shopBackBtn');
     const menuBtn = document.getElementById('menuBtn');
+    const usernameInput = document.getElementById('usernameInput');
+    const saveProfileBtn = document.getElementById('saveProfileBtn');
+    const gamesCount = document.getElementById('gamesCount');
+    const winsCount = document.getElementById('winsCount');
+    const lossesCount = document.getElementById('lossesCount');
+    const drawsCount = document.getElementById('drawsCount');
 
     const LOSUN_STORAGE_KEY = 'alons_tic_losun';
+    const PROFILE_STORAGE_KEY = 'alons_tic_profile';
     const ROOM_ID_PREFIX = 'tictac-';
 
     const wins = [
@@ -394,6 +451,7 @@
     let isHost = false;
     let myMark = 'X';
     let losun = 0;
+    let profile = { username: 'Player', games: 0, wins: 0, losses: 0, draws: 0 };
 
     function updateStatus(message) {
       statusText.textContent = message;
@@ -401,6 +459,63 @@
 
     function updateConnection(message) {
       connectionText.textContent = message;
+    }
+
+    function sanitizeUsername(value) {
+      const trimmed = value.trim();
+      return trimmed ? trimmed.slice(0, 16) : 'Player';
+    }
+
+    function updateProfileUi() {
+      usernameInput.value = profile.username;
+      gamesCount.textContent = String(profile.games);
+      winsCount.textContent = String(profile.wins);
+      lossesCount.textContent = String(profile.losses);
+      drawsCount.textContent = String(profile.draws);
+    }
+
+    function saveProfile() {
+      try {
+        localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
+      } catch (err) {}
+      updateProfileUi();
+    }
+
+    function loadProfile() {
+      try {
+        const rawValue = localStorage.getItem(PROFILE_STORAGE_KEY);
+        const parsed = rawValue ? JSON.parse(rawValue) : null;
+        if (parsed && typeof parsed === 'object') {
+          profile = {
+            username: sanitizeUsername(parsed.username || 'Player'),
+            games: Number.isFinite(Number(parsed.games)) ? Math.max(0, Math.floor(Number(parsed.games))) : 0,
+            wins: Number.isFinite(Number(parsed.wins)) ? Math.max(0, Math.floor(Number(parsed.wins))) : 0,
+            losses: Number.isFinite(Number(parsed.losses)) ? Math.max(0, Math.floor(Number(parsed.losses))) : 0,
+            draws: Number.isFinite(Number(parsed.draws)) ? Math.max(0, Math.floor(Number(parsed.draws))) : 0
+          };
+        }
+      } catch (err) {
+        profile = { username: 'Player', games: 0, wins: 0, losses: 0, draws: 0 };
+      }
+      updateProfileUi();
+    }
+
+    function saveUsernameFromInput() {
+      profile.username = sanitizeUsername(usernameInput.value);
+      saveProfile();
+      updateConnection(`Saved as ${profile.username}.`);
+    }
+
+    function recordMatchResult(result, won) {
+      profile.games += 1;
+      if (result === 'draw') {
+        profile.draws += 1;
+      } else if (won) {
+        profile.wins += 1;
+      } else {
+        profile.losses += 1;
+      }
+      saveProfile();
     }
 
     function setActiveScreen(screen) {
@@ -757,6 +872,7 @@
       }
 
       const won = mode === 'online' ? result === myMark : result === 'X';
+      recordMatchResult(result, won);
       if (won) {
         if (mode === 'online') {
           addLosun(10);
@@ -1144,6 +1260,13 @@
     shopMenuBtn.addEventListener('click', openShopScreen);
     shopBackBtn.addEventListener('click', openMenuScreen);
     menuBtn.addEventListener('click', openMenuScreen);
+    saveProfileBtn.addEventListener('click', saveUsernameFromInput);
+    usernameInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        saveUsernameFromInput();
+      }
+    });
 
     difficultySelect.addEventListener('change', () => {
       difficulty = difficultySelect.value;
@@ -1160,6 +1283,7 @@
     document.addEventListener('touchstart', unlockAudio, { passive: true });
 
     updateConnection('');
+    loadProfile();
     loadLosun();
     window.spendLosun = spendLosun;
     setActiveScreen('menu');
