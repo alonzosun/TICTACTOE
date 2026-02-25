@@ -33,6 +33,10 @@
       padding: 20px;
     }
 
+    .hidden {
+      display: none !important;
+    }
+
     .game {
       width: min(96vw, 560px);
       background: var(--panel);
@@ -40,6 +44,30 @@
       border-radius: 16px;
       padding: 24px;
       box-shadow: 0 14px 28px rgba(0, 0, 0, 0.15);
+    }
+
+    .menu-actions {
+      display: grid;
+      gap: 12px;
+      max-width: 260px;
+      margin: 8px auto 0;
+    }
+
+    .menu-btn {
+      border: 2px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 1.05rem;
+      height: 52px;
+      cursor: pointer;
+    }
+
+    .shop-note {
+      margin: 12px 0 16px;
+      text-align: center;
+      font-weight: 700;
     }
 
     h1 {
@@ -250,9 +278,25 @@
   </style>
 </head>
 <body>
-  <main class="game" aria-label="Tic-Tac-Toe game">
+  <section class="game" id="menuScreen" aria-label="Main menu">
     <h1>Alons Tic Tac</h1>
     <p class="wallet" aria-live="polite">Losun: <span id="losunValue">0</span></p>
+    <div class="menu-actions">
+      <button id="playMenuBtn" class="menu-btn">Play</button>
+      <button id="shopMenuBtn" class="menu-btn">Shop</button>
+    </div>
+  </section>
+
+  <section class="game hidden" id="shopScreen" aria-label="Shop screen">
+    <h1>Shop</h1>
+    <p class="shop-note">Shop coming soon.</p>
+    <div class="controls">
+      <button id="shopBackBtn" class="start">Back</button>
+    </div>
+  </section>
+
+  <main class="game hidden" id="boardScreen" aria-label="Tic-Tac-Toe game">
+    <h1>Alons Tic Tac</h1>
 
     <div class="setup">
       <select id="mode" class="mode" aria-label="Game mode">
@@ -290,6 +334,7 @@
 
     <div class="controls">
       <button class="reset" id="resetBtn">New Game</button>
+      <button class="start" id="menuBtn">Menu</button>
     </div>
   </main>
 
@@ -307,6 +352,13 @@
     const joinBtn = document.getElementById('joinBtn');
     const connectionText = document.getElementById('connectionText');
     const losunValue = document.getElementById('losunValue');
+    const menuScreen = document.getElementById('menuScreen');
+    const boardScreen = document.getElementById('boardScreen');
+    const shopScreen = document.getElementById('shopScreen');
+    const playMenuBtn = document.getElementById('playMenuBtn');
+    const shopMenuBtn = document.getElementById('shopMenuBtn');
+    const shopBackBtn = document.getElementById('shopBackBtn');
+    const menuBtn = document.getElementById('menuBtn');
 
     const LOSUN_STORAGE_KEY = 'alons_tic_losun';
 
@@ -348,6 +400,35 @@
 
     function updateConnection(message) {
       connectionText.textContent = message;
+    }
+
+    function setActiveScreen(screen) {
+      menuScreen.classList.toggle('hidden', screen !== 'menu');
+      boardScreen.classList.toggle('hidden', screen !== 'board');
+      shopScreen.classList.toggle('hidden', screen !== 'shop');
+    }
+
+    function isBoardScreenActive() {
+      return !boardScreen.classList.contains('hidden');
+    }
+
+    function openBoardScreen() {
+      setActiveScreen('board');
+      updateModeUi();
+    }
+
+    function openShopScreen() {
+      setActiveScreen('shop');
+    }
+
+    function openMenuScreen() {
+      setActiveScreen('menu');
+      clearPendingAiMove();
+      if (mode === 'online') {
+        disconnectOnline();
+      }
+      gameStarted = false;
+      setBoardDisabled(true);
     }
 
     function updateLosunUi() {
@@ -660,8 +741,12 @@
 
       const won = mode === 'online' ? result === myMark : result === 'X';
       if (won) {
-        addLosun(10);
-        updateStatus('You win! +10 Losun');
+        if (mode === 'online') {
+          addLosun(10);
+          updateStatus('You win! +10 Losun');
+        } else {
+          updateStatus('You win! No Losun in VS AI.');
+        }
         playWinCheer();
       } else {
         updateStatus(mode === 'online' ? 'You lose!' : 'AI wins!');
@@ -956,6 +1041,10 @@
     }
 
     function handleKeyboard(event) {
+      if (!isBoardScreenActive()) {
+        return;
+      }
+
       if (event.repeat) {
         return;
       }
@@ -984,6 +1073,7 @@
     function pollGamepad() {
       const pads = navigator.getGamepads ? navigator.getGamepads() : [];
       const pad = pads && pads[0];
+      const boardActive = isBoardScreenActive();
 
       if (pad) {
         const currentState = {
@@ -995,22 +1085,22 @@
           start: Boolean(pad.buttons[9] && pad.buttons[9].pressed)
         };
 
-        if (currentState.up && !previousPadState.up) {
+        if (boardActive && currentState.up && !previousPadState.up) {
           moveSelection(-1, 0);
         }
-        if (currentState.down && !previousPadState.down) {
+        if (boardActive && currentState.down && !previousPadState.down) {
           moveSelection(1, 0);
         }
-        if (currentState.left && !previousPadState.left) {
+        if (boardActive && currentState.left && !previousPadState.left) {
           moveSelection(0, -1);
         }
-        if (currentState.right && !previousPadState.right) {
+        if (boardActive && currentState.right && !previousPadState.right) {
           moveSelection(0, 1);
         }
-        if (currentState.select && !previousPadState.select) {
+        if (boardActive && currentState.select && !previousPadState.select) {
           activateSelectedCell();
         }
-        if (currentState.start && !previousPadState.start) {
+        if (boardActive && currentState.start && !previousPadState.start) {
           startGame();
         }
 
@@ -1028,6 +1118,10 @@
     resetBtn.addEventListener('click', manualNewGame);
     hostBtn.addEventListener('click', hostOnlineGame);
     joinBtn.addEventListener('click', joinOnlineGame);
+    playMenuBtn.addEventListener('click', openBoardScreen);
+    shopMenuBtn.addEventListener('click', openShopScreen);
+    shopBackBtn.addEventListener('click', openMenuScreen);
+    menuBtn.addEventListener('click', openMenuScreen);
 
     difficultySelect.addEventListener('change', () => {
       difficulty = difficultySelect.value;
@@ -1046,8 +1140,8 @@
     updateConnection('');
     loadLosun();
     window.spendLosun = spendLosun;
-    updateStatus('Choose difficulty and press Start.');
-    setBoardDisabled(true);
+    setActiveScreen('menu');
+    updateModeUi();
     refreshSelectedCell();
     if (!gamepadFrameId) {
       gamepadFrameId = requestAnimationFrame(pollGamepad);
