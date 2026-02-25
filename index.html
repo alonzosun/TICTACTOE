@@ -104,6 +104,7 @@
       color: var(--text);
       transition: transform 120ms ease, background 120ms ease;
       position: relative;
+      touch-action: manipulation;
     }
 
     .cell:hover:enabled {
@@ -113,6 +114,13 @@
 
     .cell:disabled {
       cursor: default;
+    }
+
+    .cell:focus-visible,
+    .cell.selected {
+      outline: 3px solid #3b82f6;
+      outline-offset: 2px;
+      z-index: 1;
     }
 
     .cell.x {
@@ -148,6 +156,40 @@
     .controls {
       display: flex;
       justify-content: center;
+    }
+
+    @media (max-width: 700px) {
+      body {
+        padding: 12px;
+      }
+
+      .game {
+        width: min(98vw, 560px);
+        padding: 16px;
+      }
+
+      .setup,
+      .controls {
+        gap: 10px;
+      }
+
+      .difficulty,
+      .start,
+      .reset {
+        height: 48px;
+        font-size: 1rem;
+      }
+
+      .board {
+        gap: 8px;
+      }
+    }
+
+    @media (hover: none) and (pointer: coarse) {
+      .cell:hover:enabled {
+        transform: none;
+        background: #fff;
+      }
     }
   </style>
 </head>
@@ -209,9 +251,34 @@
     let animatingReset = false;
     let aiMoveTimer = null;
     let audioCtx = null;
+    let selectedIndex = 0;
+    let gamepadFrameId = null;
+    let previousPadState = {
+      up: false,
+      down: false,
+      left: false,
+      right: false,
+      select: false,
+      start: false
+    };
 
     function updateStatus(message) {
       statusText.textContent = message;
+    }
+
+    function refreshSelectedCell() {
+      cells.forEach((cell, index) => {
+        cell.classList.toggle('selected', index === selectedIndex);
+      });
+    }
+
+    function setSelectedIndex(index) {
+      selectedIndex = Math.max(0, Math.min(8, index));
+      refreshSelectedCell();
+    }
+
+    function findFirstEmptyCell() {
+      return board.findIndex((mark) => mark === '');
     }
 
     function getAudioContext() {
@@ -309,6 +376,7 @@
         const idx = Number(cell.dataset.index);
         cell.disabled = disabled || board[idx] !== '';
       });
+      refreshSelectedCell();
     }
 
     function pickRandomMove() {
@@ -401,6 +469,7 @@
       setTimeout(() => {
         resetBoard();
         updateStatus(`Difficulty: ${difficulty}. Your turn (X)`);
+        setBoardDisabled(false);
       }, restartAfter);
     }
 
@@ -466,6 +535,7 @@
 
       const cell = event.currentTarget;
       const index = Number(cell.dataset.index);
+      setSelectedIndex(index);
 
       if (board[index]) {
         return;
@@ -500,6 +570,93 @@
         cell.style.removeProperty('--delay');
         cell.style.removeProperty('--spin');
       });
+
+      const firstEmpty = findFirstEmptyCell();
+      setSelectedIndex(firstEmpty >= 0 ? firstEmpty : 0);
+    }
+
+    function moveSelection(deltaRow, deltaCol) {
+      const row = Math.floor(selectedIndex / 3);
+      const col = selectedIndex % 3;
+      const nextRow = Math.max(0, Math.min(2, row + deltaRow));
+      const nextCol = Math.max(0, Math.min(2, col + deltaCol));
+      setSelectedIndex(nextRow * 3 + nextCol);
+    }
+
+    function activateSelectedCell() {
+      if (!gameStarted || gameOver || animatingReset || player !== 'X') {
+        return;
+      }
+      const cell = cells[selectedIndex];
+      if (!cell || cell.disabled) {
+        return;
+      }
+      cell.click();
+    }
+
+    function handleKeyboard(event) {
+      if (event.repeat) {
+        return;
+      }
+
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        moveSelection(-1, 0);
+      } else if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        moveSelection(1, 0);
+      } else if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        moveSelection(0, -1);
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        moveSelection(0, 1);
+      } else if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        activateSelectedCell();
+      } else if (event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        startGame();
+      }
+    }
+
+    function pollGamepad() {
+      const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+      const pad = pads && pads[0];
+
+      if (pad) {
+        const currentState = {
+          up: Boolean(pad.buttons[12] && pad.buttons[12].pressed),
+          down: Boolean(pad.buttons[13] && pad.buttons[13].pressed),
+          left: Boolean(pad.buttons[14] && pad.buttons[14].pressed),
+          right: Boolean(pad.buttons[15] && pad.buttons[15].pressed),
+          select: Boolean(pad.buttons[0] && pad.buttons[0].pressed),
+          start: Boolean(pad.buttons[9] && pad.buttons[9].pressed)
+        };
+
+        if (currentState.up && !previousPadState.up) {
+          moveSelection(-1, 0);
+        }
+        if (currentState.down && !previousPadState.down) {
+          moveSelection(1, 0);
+        }
+        if (currentState.left && !previousPadState.left) {
+          moveSelection(0, -1);
+        }
+        if (currentState.right && !previousPadState.right) {
+          moveSelection(0, 1);
+        }
+        if (currentState.select && !previousPadState.select) {
+          activateSelectedCell();
+        }
+        if (currentState.start && !previousPadState.start) {
+          startGame();
+        }
+
+        previousPadState = currentState;
+      }
+
+      gamepadFrameId = requestAnimationFrame(pollGamepad);
     }
 
     function startGame() {
@@ -536,9 +693,14 @@
 
     startBtn.addEventListener('click', startGame);
     resetBtn.addEventListener('click', manualNewGame);
+    document.addEventListener('keydown', handleKeyboard);
 
     updateStatus('Choose difficulty and press Start.');
     setBoardDisabled(true);
+    refreshSelectedCell();
+    if (!gamepadFrameId) {
+      gamepadFrameId = requestAnimationFrame(pollGamepad);
+    }
   </script>
 </body>
 </html>
