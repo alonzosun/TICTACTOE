@@ -320,20 +320,10 @@
   <section class="game" id="menuScreen" aria-label="Main menu">
     <h1>Alons Tic Tac</h1>
     <p class="wallet" aria-live="polite">Losun: <span id="losunValue">0</span></p>
-    <div class="profile" aria-label="Player profile">
-      <label for="usernameInput" class="profile-label">Username</label>
-      <div class="profile-row">
-        <input id="usernameInput" class="username-input" type="text" maxlength="16" placeholder="Enter username" />
-        <button id="saveProfileBtn" class="start">Save</button>
-      </div>
-      <p class="profile-help">Saved on this device. No email required.</p>
-      <p class="profile-stats">
-        Games <span id="gamesCount">0</span> | Wins <span id="winsCount">0</span> | Losses <span id="lossesCount">0</span> | Draws <span id="drawsCount">0</span>
-      </p>
-    </div>
     <div class="menu-actions">
       <button id="playMenuBtn" class="menu-btn">Play</button>
       <button id="shopMenuBtn" class="menu-btn">Shop</button>
+      <button id="statsMenuBtn" class="menu-btn">Stats</button>
     </div>
   </section>
 
@@ -342,6 +332,24 @@
     <p class="shop-note">Shop coming soon.</p>
     <div class="controls">
       <button id="shopBackBtn" class="start">Back</button>
+    </div>
+  </section>
+
+  <section class="game hidden" id="statsScreen" aria-label="Stats screen">
+    <h1>Stats</h1>
+    <div class="profile" aria-label="Player profile">
+      <label for="usernameInput" class="profile-label">Username</label>
+      <div class="profile-row">
+        <input id="usernameInput" class="username-input" type="text" maxlength="16" placeholder="Enter username" />
+        <button id="saveProfileBtn" class="start">Save</button>
+      </div>
+      <p class="profile-help">Saved on this device. No email required.</p>
+      <p class="profile-stats">
+        Online 1v1 only: Games <span id="gamesCount">0</span> | Wins <span id="winsCount">0</span> | Losses <span id="lossesCount">0</span> | Draws <span id="drawsCount">0</span>
+      </p>
+    </div>
+    <div class="controls">
+      <button id="statsBackBtn" class="start">Back</button>
     </div>
   </section>
 
@@ -405,9 +413,12 @@
     const menuScreen = document.getElementById('menuScreen');
     const boardScreen = document.getElementById('boardScreen');
     const shopScreen = document.getElementById('shopScreen');
+    const statsScreen = document.getElementById('statsScreen');
     const playMenuBtn = document.getElementById('playMenuBtn');
     const shopMenuBtn = document.getElementById('shopMenuBtn');
+    const statsMenuBtn = document.getElementById('statsMenuBtn');
     const shopBackBtn = document.getElementById('shopBackBtn');
+    const statsBackBtn = document.getElementById('statsBackBtn');
     const menuBtn = document.getElementById('menuBtn');
     const usernameInput = document.getElementById('usernameInput');
     const saveProfileBtn = document.getElementById('saveProfileBtn');
@@ -522,6 +533,7 @@
       menuScreen.classList.toggle('hidden', screen !== 'menu');
       boardScreen.classList.toggle('hidden', screen !== 'board');
       shopScreen.classList.toggle('hidden', screen !== 'shop');
+      statsScreen.classList.toggle('hidden', screen !== 'stats');
     }
 
     function isBoardScreenActive() {
@@ -535,6 +547,11 @@
 
     function openShopScreen() {
       setActiveScreen('shop');
+    }
+
+    function openStatsScreen() {
+      setActiveScreen('stats');
+      updateProfileUi();
     }
 
     function openMenuScreen() {
@@ -866,13 +883,18 @@
       setBoardDisabled(true);
 
       if (result === 'draw') {
+        if (mode === 'online') {
+          recordMatchResult(result, false);
+        }
         updateStatus('Draw! New round starts now.');
         animatePiecesFallAndRestart();
         return;
       }
 
       const won = mode === 'online' ? result === myMark : result === 'X';
-      recordMatchResult(result, won);
+      if (mode === 'online') {
+        recordMatchResult(result, won);
+      }
       if (won) {
         if (mode === 'online') {
           addLosun(10);
@@ -1258,7 +1280,9 @@
     joinBtn.addEventListener('click', joinOnlineGame);
     playMenuBtn.addEventListener('click', openBoardScreen);
     shopMenuBtn.addEventListener('click', openShopScreen);
+    statsMenuBtn.addEventListener('click', openStatsScreen);
     shopBackBtn.addEventListener('click', openMenuScreen);
+    statsBackBtn.addEventListener('click', openMenuScreen);
     menuBtn.addEventListener('click', openMenuScreen);
     saveProfileBtn.addEventListener('click', saveUsernameFromInput);
     usernameInput.addEventListener('keydown', (event) => {
