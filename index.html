@@ -1151,6 +1151,7 @@
     let peer = null;
     let conn = null;
     let onlineConnected = false;
+    let onlineStarterAssigned = false;
     let isHost = false;
     let myMark = 'X';
     let losun = 0;
@@ -1866,7 +1867,7 @@
 
     function isHumanTurn() {
       if (mode === 'online') {
-        return onlineConnected && player === myMark;
+        return onlineConnected && onlineStarterAssigned && player === myMark;
       }
       return player === 'X';
     }
@@ -1875,6 +1876,10 @@
       if (mode === 'online') {
         if (!onlineConnected) {
           updateStatus('Create or join a room to start online 1v1.');
+          return;
+        }
+        if (!onlineStarterAssigned) {
+          updateStatus(isHost ? 'Choosing random starter...' : 'Waiting for host to choose starter...');
           return;
         }
         if (gameOver) {
@@ -1894,6 +1899,20 @@
       if (mode === 'online' && conn && conn.open) {
         conn.send(payload);
       }
+    }
+
+    function assignRandomOnlineStarter(sendToPeer = true) {
+      if (mode !== 'online') {
+        return;
+      }
+      const starter = Math.random() < 0.5 ? 'X' : 'O';
+      player = starter;
+      onlineStarterAssigned = true;
+      if (sendToPeer) {
+        sendOnlineMessage({ type: 'start-player', player: starter });
+      }
+      updateTurnStatus();
+      setBoardDisabled(!isHumanTurn());
     }
 
     function animatePiecesFallAndRestart() {
@@ -2090,6 +2109,7 @@
         peer = null;
       }
       onlineConnected = false;
+      onlineStarterAssigned = false;
       isHost = false;
       updateConnection('');
     }
@@ -2100,10 +2120,15 @@
       conn.on('open', () => {
         onlineConnected = true;
         gameStarted = true;
+        onlineStarterAssigned = false;
         resetBoard();
         updateConnection(`Connected. You are ${myMark}.`);
-        updateTurnStatus();
-        setBoardDisabled(!isHumanTurn());
+        if (isHost) {
+          assignRandomOnlineStarter(true);
+        } else {
+          updateTurnStatus();
+          setBoardDisabled(true);
+        }
       });
 
       conn.on('data', (msg) => {
@@ -2114,8 +2139,17 @@
         if (msg.type === 'move' && typeof msg.index === 'number' && (msg.mark === 'X' || msg.mark === 'O')) {
           applyMove(msg.index, msg.mark, true);
         } else if (msg.type === 'reset') {
+          onlineStarterAssigned = false;
           resetBoard();
-          player = 'X';
+          if (isHost) {
+            assignRandomOnlineStarter(true);
+          } else {
+            updateTurnStatus();
+            setBoardDisabled(true);
+          }
+        } else if (msg.type === 'start-player' && (msg.player === 'X' || msg.player === 'O')) {
+          player = msg.player;
+          onlineStarterAssigned = true;
           updateTurnStatus();
           setBoardDisabled(!isHumanTurn());
         }
@@ -2229,8 +2263,14 @@
       updateTurnStatus();
 
       if (mode === 'online') {
+        onlineStarterAssigned = false;
         sendOnlineMessage({ type: 'reset' });
-        setBoardDisabled(!isHumanTurn());
+        if (isHost) {
+          assignRandomOnlineStarter(true);
+        } else {
+          updateTurnStatus();
+          setBoardDisabled(true);
+        }
       } else {
         setBoardDisabled(false);
       }
@@ -2245,6 +2285,7 @@
       startBtn.disabled = online;
 
       if (online) {
+        onlineStarterAssigned = false;
         updateStatus('Create or join a room to start online 1v1.');
         setBoardDisabled(true);
       } else {
