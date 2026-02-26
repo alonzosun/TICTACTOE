@@ -407,6 +407,37 @@
       filter: blur(0.15px);
     }
 
+    .board.frost-cracked::before,
+    .board.frost-cracked::after {
+      background:
+        repeating-conic-gradient(
+          from -16deg at 50% 56%,
+          rgba(12, 45, 86, 0.85) 0deg 1.1deg,
+          rgba(188, 231, 255, 0.08) 1.1deg 13deg
+        ),
+        radial-gradient(circle at 50% 56%, rgba(0, 28, 67, 0.6) 0 3%, rgba(61, 125, 179, 0.2) 9%, transparent 28%),
+        repeating-radial-gradient(
+          circle at 50% 56%,
+          transparent 0 16px,
+          rgba(26, 85, 136, 0.2) 16px 17px,
+          transparent 17px 33px
+        );
+      mix-blend-mode: screen;
+      filter: drop-shadow(0 0 2px rgba(143, 215, 255, 0.45));
+    }
+
+    .board.frost-cracked::after {
+      background:
+        repeating-conic-gradient(
+          from 4deg at 50% 56%,
+          rgba(14, 56, 102, 0.62) 0deg 0.8deg,
+          transparent 0.8deg 9deg
+        ),
+        radial-gradient(circle at 50% 56%, rgba(226, 247, 255, 0.45), transparent 32%);
+      opacity: 0.88;
+      mix-blend-mode: soft-light;
+    }
+
     .cell {
       appearance: none;
       border: 2px solid #5f3a21;
@@ -2329,7 +2360,7 @@
     }
 
     function clearBoardWinEffects() {
-      boardElement.classList.remove('effect-classic', 'effect-ember', 'effect-aurora', 'effect-meteor', 'effect-frostnova', 'cracked');
+      boardElement.classList.remove('effect-classic', 'effect-ember', 'effect-aurora', 'effect-meteor', 'effect-frostnova', 'cracked', 'frost-cracked');
       boardElement.querySelectorAll('.win-particle, .win-glint, .ember-spark, .smoke-puff, .aurora-ribbon, .aurora-star, .meteor, .meteor-impact, .mega-meteor, .impact-flash, .impact-wave, .frost-ring, .frost-shard, .frost-mist, .snowflake, .frost-glow, .frost-sheet').forEach((node) => node.remove());
       if (winEffectTimer) {
         clearTimeout(winEffectTimer);
@@ -2578,6 +2609,7 @@
         spawnSnowflakes(64);
         spawnWinParticles(['#d8f7ff', '#9fe5ff', '#7dcfff', '#eefcff'], 54);
         setTimeout(() => {
+          boardElement.classList.add('frost-cracked');
           boardElement.classList.add('cracked');
           playFrostShatterSound();
         }, 2550);
