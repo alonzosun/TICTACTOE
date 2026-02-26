@@ -1754,6 +1754,7 @@
     const OFFER_STORAGE_KEY = 'alons_tic_offer_window';
     const ELO_STORAGE_KEY = 'alons_tic_ranked_elo';
     const LEADERBOARD_STORAGE_KEY = 'alons_tic_leaderboard';
+    const PLAYER_ID_STORAGE_KEY = 'alons_tic_player_id';
     const ROOM_ID_PREFIX = 'tictac-';
     const OWNER_ADMIN_CODE = 'alonzosun';
     const DEFAULT_RANKED_ELO = 1000;
@@ -1801,6 +1802,8 @@
     let isHost = false;
     let myMark = 'X';
     let opponentName = 'Opponent';
+    let myPlayerId = '';
+    let opponentPlayerId = '';
     let opponentRankedElo = DEFAULT_RANKED_ELO;
     let losun = 0;
     let rankedElo = DEFAULT_RANKED_ELO;
@@ -2099,7 +2102,7 @@
     function saveUsernameFromInput() {
       profile.username = sanitizeUsername(usernameInput.value);
       saveProfile();
-      upsertLeaderboardEntry(profile.username, { elo: rankedElo });
+      upsertLeaderboardEntry(profile.username, { elo: rankedElo, playerId: myPlayerId });
       updateConnection(`Saved as ${profile.username}.`);
     }
 
@@ -2134,6 +2137,9 @@
           leaderboard = parsed
             .filter((entry) => entry && typeof entry.username === 'string' && entry.rankedOnly === true)
             .map((entry) => ({
+              playerId: typeof entry.playerId === 'string' && entry.playerId
+                ? entry.playerId
+                : `legacy:${sanitizeUsername(entry.username)}`,
               username: sanitizeUsername(entry.username),
               elo: Number.isFinite(Number(entry.elo)) ? Math.max(MIN_RANKED_ELO, Math.min(MAX_RANKED_ELO, Math.floor(Number(entry.elo)))) : DEFAULT_RANKED_ELO,
               wins: Number.isFinite(Number(entry.wins)) ? Math.max(0, Math.floor(Number(entry.wins))) : 0,
@@ -2154,8 +2160,12 @@
 
     function upsertLeaderboardEntry(username, patch = {}) {
       const cleanName = sanitizeUsername(username || 'Player');
-      const existing = leaderboard.find((entry) => entry.username === cleanName);
+      const entryId = (typeof patch.playerId === 'string' && patch.playerId)
+        ? patch.playerId
+        : `legacy:${cleanName}`;
+      const existing = leaderboard.find((entry) => entry.playerId === entryId);
       if (existing) {
+        existing.playerId = entryId;
         existing.elo = Number.isFinite(Number(patch.elo)) ? Math.max(MIN_RANKED_ELO, Math.min(MAX_RANKED_ELO, Math.floor(Number(patch.elo)))) : existing.elo;
         existing.wins = Number.isFinite(Number(patch.wins)) ? Math.max(0, Math.floor(Number(patch.wins))) : existing.wins;
         existing.games = Number.isFinite(Number(patch.games)) ? Math.max(0, Math.floor(Number(patch.games))) : existing.games;
@@ -2165,6 +2175,7 @@
         existing.rankedOnly = true;
       } else {
         leaderboard.push({
+          playerId: entryId,
           username: cleanName,
           elo: Number.isFinite(Number(patch.elo)) ? Math.max(MIN_RANKED_ELO, Math.min(MAX_RANKED_ELO, Math.floor(Number(patch.elo)))) : DEFAULT_RANKED_ELO,
           wins: Number.isFinite(Number(patch.wins)) ? Math.max(0, Math.floor(Number(patch.wins))) : 0,
@@ -2178,17 +2189,20 @@
       saveLeaderboard();
     }
 
-    function getLeaderboardEntry(username) {
-      const cleanName = sanitizeUsername(username || 'Player');
-      return leaderboard.find((entry) => entry.username === cleanName) || null;
+    function getLeaderboardEntryById(playerId) {
+      if (!playerId) {
+        return null;
+      }
+      return leaderboard.find((entry) => entry.playerId === playerId) || null;
     }
 
     function recordRankedLeaderboardResult(won) {
-      const current = getLeaderboardEntry(profile.username);
+      const current = getLeaderboardEntryById(myPlayerId);
       const nextGames = (current ? current.games : 0) + 1;
       const nextWins = (current ? current.wins : 0) + (won ? 1 : 0);
       const nextLosses = (current ? current.losses : 0) + (won ? 0 : 1);
       upsertLeaderboardEntry(profile.username, {
+        playerId: myPlayerId,
         elo: rankedElo,
         games: nextGames,
         wins: nextWins,
@@ -2348,6 +2362,7 @@
       modeSelect.value = 'online';
       modeSelect.disabled = true;
       opponentName = 'Opponent';
+      opponentPlayerId = '';
       opponentRankedElo = DEFAULT_RANKED_ELO;
       onlineControls.classList.remove('active');
       difficultySelect.disabled = true;
@@ -2413,6 +2428,20 @@
         losun = 0;
       }
       updateLosunUi();
+    }
+
+    function ensurePlayerId() {
+      try {
+        const existing = localStorage.getItem(PLAYER_ID_STORAGE_KEY);
+        if (existing && typeof existing === 'string') {
+          myPlayerId = existing;
+          return;
+        }
+      } catch (err) {}
+      myPlayerId = `p-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+      try {
+        localStorage.setItem(PLAYER_ID_STORAGE_KEY, myPlayerId);
+      } catch (err) {}
     }
 
     function hasOwnedAnimation(id) {
@@ -3001,7 +3030,7 @@
       const k = 28;
       rankedElo = Math.max(MIN_RANKED_ELO, Math.min(MAX_RANKED_ELO, Math.round(rankedElo + k * (actualScore - expected))));
       saveRankedElo();
-      upsertLeaderboardEntry(profile.username, { elo: rankedElo });
+      upsertLeaderboardEntry(profile.username, { elo: rankedElo, playerId: myPlayerId });
       sendOnlineMessage({ type: 'ranked-elo-update', elo: rankedElo });
     }
 
@@ -3747,12 +3776,13 @@
         showChatFeed('');
         sendOnlineMessage({
           type: 'hello',
+          playerId: myPlayerId,
           username: profile.username,
           rankedElo,
           ranked: gameVariant === 'ranked',
-          rankedWins: getLeaderboardEntry(profile.username)?.wins || 0,
-          rankedLosses: getLeaderboardEntry(profile.username)?.losses || 0,
-          rankedGames: getLeaderboardEntry(profile.username)?.games || 0
+          rankedWins: getLeaderboardEntryById(myPlayerId)?.wins || 0,
+          rankedLosses: getLeaderboardEntryById(myPlayerId)?.losses || 0,
+          rankedGames: getLeaderboardEntryById(myPlayerId)?.games || 0
         });
         updateConnection(`Connected. You are ${myMark}.`);
         if (gameVariant === 'ranked') {
@@ -3779,6 +3809,7 @@
           if (typeof msg.username === 'string' && msg.username.trim()) {
             opponentName = sanitizeUsername(msg.username);
           }
+          opponentPlayerId = (typeof msg.playerId === 'string' && msg.playerId) ? msg.playerId : `remote:${opponentName}`;
           if (Number.isFinite(Number(msg.rankedElo))) {
             opponentRankedElo = Math.max(MIN_RANKED_ELO, Math.min(MAX_RANKED_ELO, Math.floor(Number(msg.rankedElo))));
           } else {
@@ -3786,6 +3817,7 @@
           }
           if (msg.ranked === true || gameVariant === 'ranked') {
             upsertLeaderboardEntry(opponentName, {
+              playerId: opponentPlayerId,
               elo: opponentRankedElo,
               wins: Number.isFinite(Number(msg.rankedWins)) ? Math.max(0, Math.floor(Number(msg.rankedWins))) : 0,
               losses: Number.isFinite(Number(msg.rankedLosses)) ? Math.max(0, Math.floor(Number(msg.rankedLosses))) : 0,
@@ -3874,7 +3906,7 @@
           showChatFeed(`${opponentName}: ${msg.text.trim().slice(0, 40)}`);
         } else if (msg.type === 'ranked-elo-update' && Number.isFinite(Number(msg.elo))) {
           opponentRankedElo = Math.max(MIN_RANKED_ELO, Math.min(MAX_RANKED_ELO, Math.floor(Number(msg.elo))));
-          upsertLeaderboardEntry(opponentName, { elo: opponentRankedElo });
+          upsertLeaderboardEntry(opponentName, { elo: opponentRankedElo, playerId: opponentPlayerId || `remote:${opponentName}` });
           updateRankedScoreUi();
         }
       });
@@ -4209,12 +4241,13 @@
     updateConnection('');
     setVariant('classic');
     loadProfile();
+    ensurePlayerId();
     loadLosun();
     loadRankedElo();
     loadLeaderboard();
     ensureOfferWindow();
     loadShopState();
-    upsertLeaderboardEntry(profile.username, { elo: rankedElo });
+    upsertLeaderboardEntry(profile.username, { elo: rankedElo, playerId: myPlayerId });
     updateAdminUi();
     window.spendLosun = spendLosun;
     setActiveScreen('menu');
