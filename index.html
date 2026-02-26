@@ -9,17 +9,22 @@
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #e8dfcf;
-      --panel: #fff8ee;
-      --paper: #fffdf7;
-      --text: #201813;
+      --bg: #e6dcc8;
+      --panel: #fff8ef;
+      --paper: #fffdf8;
+      --text: #241a14;
       --x: #0d5b76;
       --o: #b74912;
-      --line: #4b3123;
+      --line: #4a301f;
       --accent: #2f9e44;
       --wood-a: #c4894f;
       --wood-b: #ae6f3a;
       --wood-c: #8a5128;
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --radius-sm: 10px;
+      --soft-shadow: 0 12px 30px rgba(58, 34, 20, 0.16);
+      --hard-shadow: 0 6px 14px rgba(58, 34, 20, 0.2);
     }
 
     * {
@@ -32,9 +37,9 @@
       display: grid;
       place-items: center;
       background:
-        radial-gradient(circle at 10% 10%, rgba(255, 236, 201, 0.52), transparent 38%),
-        radial-gradient(circle at 88% 20%, rgba(161, 110, 71, 0.25), transparent 40%),
-        linear-gradient(155deg, #f1e7d5 0%, var(--bg) 45%, #dcc8ad 100%);
+        radial-gradient(circle at 10% 8%, rgba(255, 237, 204, 0.6), transparent 40%),
+        radial-gradient(circle at 86% 22%, rgba(166, 114, 70, 0.24), transparent 44%),
+        linear-gradient(160deg, #f3ead8 0%, var(--bg) 48%, #d8c3a3 100%);
       color: var(--text);
       font-family: "Quicksand", "Segoe UI", sans-serif;
       padding: 20px;
@@ -45,23 +50,23 @@
     }
 
     .game {
-      width: min(96vw, 560px);
+      width: min(96vw, 620px);
       background:
         linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(255, 249, 238, 0.92)),
         var(--panel);
       border: 3px solid var(--line);
-      border-radius: 20px;
-      padding: 24px;
+      border-radius: var(--radius-lg);
+      padding: 22px 22px 20px;
       box-shadow:
-        0 18px 38px rgba(56, 34, 20, 0.22),
+        var(--soft-shadow),
         inset 0 1px 0 rgba(255, 255, 255, 0.8);
       animation: card-rise 220ms ease-out;
     }
 
     .menu-actions {
       display: grid;
-      gap: 12px;
-      max-width: 260px;
+      gap: 10px;
+      max-width: 320px;
       margin: 8px auto 0;
     }
 
@@ -69,18 +74,19 @@
       border: 2px solid var(--line);
       background: linear-gradient(180deg, #fffaf2 0%, #f6e8d2 100%);
       color: var(--text);
-      border-radius: 12px;
+      border-radius: var(--radius-md);
       font-weight: 800;
       font-size: 1.05rem;
       height: 52px;
       cursor: pointer;
       letter-spacing: 0.3px;
-      transition: transform 140ms ease, box-shadow 140ms ease;
+      transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
     }
 
     .menu-btn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 16px rgba(72, 43, 24, 0.2);
+      box-shadow: var(--hard-shadow);
+      filter: saturate(1.03);
     }
 
     .shop-note {
@@ -104,9 +110,10 @@
 
     .shop-item {
       border: 2px solid var(--line);
-      border-radius: 12px;
+      border-radius: var(--radius-md);
       background: var(--paper);
-      padding: 10px;
+      padding: 12px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
     }
 
     .shop-item-head {
@@ -147,30 +154,30 @@
     }
 
     h1 {
-      margin: 0 0 12px;
+      margin: 0 0 14px;
       text-align: center;
-      letter-spacing: 1.1px;
+      letter-spacing: 0.8px;
       font-size: clamp(1.8rem, 4.5vw, 2.3rem);
       color: #4b2f1f;
       text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
     }
 
     .wallet {
-      margin: 0 0 12px;
+      margin: 0 0 14px;
       text-align: center;
       font-weight: 800;
       font-size: 0.98rem;
       background: rgba(255, 250, 242, 0.78);
       border: 2px dashed rgba(75, 49, 35, 0.5);
-      border-radius: 10px;
-      padding: 7px 10px;
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
     }
 
     .profile {
       border: 2px solid var(--line);
-      border-radius: 12px;
+      border-radius: var(--radius-md);
       background: var(--paper);
-      padding: 10px;
+      padding: 12px;
       margin: 0 0 12px;
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
     }
@@ -190,7 +197,7 @@
     .username-input {
       flex: 1;
       border: 2px solid var(--line);
-      border-radius: 10px;
+      border-radius: var(--radius-sm);
       height: 40px;
       padding: 0 10px;
       font-weight: 700;
@@ -209,7 +216,7 @@
 
     .admin {
       border: 2px dashed var(--line);
-      border-radius: 12px;
+      border-radius: var(--radius-md);
       background: #fffaf0;
       padding: 10px;
       margin: 0 0 12px;
@@ -239,10 +246,11 @@
     }
 
     .setup {
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
       gap: 8px;
       margin-bottom: 12px;
-      flex-wrap: wrap;
+      align-items: center;
     }
 
     .mode,
@@ -252,7 +260,7 @@
       border: 2px solid var(--line);
       background: linear-gradient(180deg, #fffaf2 0%, #f0dec2 100%);
       color: var(--text);
-      border-radius: 10px;
+      border-radius: var(--radius-sm);
       font-weight: 700;
       height: 40px;
       box-shadow: 0 2px 0 rgba(75, 49, 35, 0.28);
@@ -272,6 +280,20 @@
       transition: transform 120ms ease, box-shadow 120ms ease;
     }
 
+    .mode:focus-visible,
+    .difficulty:focus-visible,
+    .start:focus-visible,
+    .reset:focus-visible,
+    .room-code:focus-visible,
+    .host:focus-visible,
+    .join:focus-visible,
+    .chat-btn:focus-visible,
+    .username-input:focus-visible,
+    .menu-btn:focus-visible {
+      outline: 3px solid rgba(47, 158, 68, 0.28);
+      outline-offset: 1px;
+    }
+
     .start:hover,
     .reset:hover,
     .host:hover,
@@ -285,6 +307,10 @@
       text-align: center;
       font-weight: 700;
       min-height: 1.4em;
+      background: rgba(255, 250, 242, 0.65);
+      border: 1px solid rgba(75, 49, 35, 0.2);
+      border-radius: var(--radius-sm);
+      padding: 7px 9px;
     }
 
     .score-effect {
@@ -868,6 +894,8 @@
     .controls {
       display: flex;
       justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
     .footer {
@@ -896,10 +924,11 @@
       border: 2px solid var(--line);
       background: #fffaf1;
       color: var(--text);
-      border-radius: 10px;
+      border-radius: var(--radius-sm);
       font-weight: 700;
       height: 40px;
       padding: 0 10px;
+      box-shadow: 0 2px 0 rgba(75, 49, 35, 0.16);
     }
 
     .host,
@@ -908,11 +937,22 @@
       padding: 0 12px;
     }
 
+    .chat-btn:hover,
+    .host:hover,
+    .join:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 5px 10px rgba(75, 49, 35, 0.18);
+    }
+
     .connection {
       margin: 0 0 12px;
       text-align: center;
       font-size: 0.95rem;
       min-height: 1.4em;
+      background: rgba(255, 250, 242, 0.65);
+      border: 1px solid rgba(75, 49, 35, 0.2);
+      border-radius: var(--radius-sm);
+      padding: 7px 9px;
     }
 
     .turn-timer,
@@ -922,6 +962,10 @@
       font-size: 0.92rem;
       min-height: 1.3em;
       font-weight: 700;
+      background: rgba(255, 250, 242, 0.58);
+      border: 1px solid rgba(75, 49, 35, 0.16);
+      border-radius: var(--radius-sm);
+      padding: 6px 8px;
     }
 
     .chat-feed {
@@ -939,10 +983,11 @@
       border: 2px solid var(--line);
       background: #fffaf1;
       color: var(--text);
-      border-radius: 10px;
+      border-radius: var(--radius-sm);
       font-weight: 700;
       height: 38px;
       cursor: pointer;
+      box-shadow: 0 2px 0 rgba(75, 49, 35, 0.16);
     }
 
     .leaderboard-list {
@@ -956,12 +1001,14 @@
     .leaderboard-item {
       border: 2px solid var(--line);
       background: #fffaf1;
-      border-radius: 10px;
-      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      padding: 9px 11px;
       font-weight: 700;
       display: flex;
       justify-content: space-between;
       gap: 10px;
+      align-items: center;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
     }
 
     .ranked-score {
@@ -970,6 +1017,10 @@
       font-size: 0.95rem;
       min-height: 1.3em;
       font-weight: 800;
+      background: rgba(255, 250, 242, 0.65);
+      border: 1px solid rgba(75, 49, 35, 0.2);
+      border-radius: var(--radius-sm);
+      padding: 6px 8px;
     }
 
     @keyframes card-rise {
@@ -996,6 +1047,10 @@
       .setup,
       .controls {
         gap: 10px;
+      }
+
+      .setup {
+        grid-template-columns: 1fr;
       }
 
       .difficulty,
