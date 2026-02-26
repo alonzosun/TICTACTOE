@@ -246,6 +246,28 @@
       opacity: 0.8;
     }
 
+    .online-admin-list {
+      margin-top: 10px;
+      border: 2px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: #fffaf1;
+      padding: 8px;
+      max-height: 160px;
+      overflow: auto;
+      display: grid;
+      gap: 6px;
+    }
+
+    .online-admin-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      border-bottom: 1px dashed rgba(75, 49, 35, 0.2);
+      padding-bottom: 4px;
+    }
+
     .setup {
       display: grid;
       grid-template-columns: 1fr 1fr auto;
@@ -1604,8 +1626,9 @@
         <button id="adminEquipBlackHoleBtn" class="start">Equip Black Hole</button>
         <button id="adminResetStatsBtn" class="reset">Reset Stats</button>
         <button id="adminResetAllBtn" class="reset">Reset Stats + Losun</button>
+        <div id="onlineAdminList" class="online-admin-list" aria-live="polite"></div>
       </div>
-      <p class="admin-note">Resets apply to this browser/device only.</p>
+      <p class="admin-note">Online list shows players seen by this client session.</p>
     </div>
     <div class="controls">
       <button id="statsBackBtn" class="start">Back</button>
@@ -1721,6 +1744,7 @@
     const adminEquipBlackHoleBtn = document.getElementById('adminEquipBlackHoleBtn');
     const adminResetStatsBtn = document.getElementById('adminResetStatsBtn');
     const adminResetAllBtn = document.getElementById('adminResetAllBtn');
+    const onlineAdminList = document.getElementById('onlineAdminList');
 
     const LOSUN_STORAGE_KEY = 'alons_tic_losun';
     const PROFILE_STORAGE_KEY = 'alons_tic_profile';
@@ -1793,6 +1817,7 @@
     let onlineTurnPlayer = null;
     let onlineTurnTimeLeft = ONLINE_TURN_SECONDS;
     let timeoutCounts = { X: 0, O: 0 };
+    let onlinePlayersSeen = [];
 
     function updateStatus(message) {
       statusText.textContent = message;
@@ -1800,6 +1825,42 @@
 
     function updateConnection(message) {
       connectionText.textContent = message;
+    }
+
+    function upsertOnlineSeenPlayer(name, status) {
+      const clean = sanitizeUsername(name || 'Unknown');
+      const existing = onlinePlayersSeen.find((entry) => entry.name === clean);
+      const now = Date.now();
+      if (existing) {
+        existing.status = status;
+        existing.seenAt = now;
+      } else {
+        onlinePlayersSeen.push({ name: clean, status, seenAt: now });
+      }
+      onlinePlayersSeen = onlinePlayersSeen
+        .sort((a, b) => b.seenAt - a.seenAt)
+        .slice(0, 25);
+      renderOnlineAdminList();
+    }
+
+    function renderOnlineAdminList() {
+      if (!onlineAdminList) {
+        return;
+      }
+      if (!adminUnlocked) {
+        onlineAdminList.innerHTML = '';
+        return;
+      }
+      if (!onlinePlayersSeen.length) {
+        onlineAdminList.innerHTML = '<p class="admin-note">No players seen yet.</p>';
+        return;
+      }
+      onlineAdminList.innerHTML = onlinePlayersSeen.map((entry) => `
+        <div class="online-admin-item">
+          <span>${entry.name}</span>
+          <span>${entry.status}</span>
+        </div>
+      `).join('');
     }
 
     function buildWinningLines(size, length) {
@@ -1919,6 +1980,7 @@
       if (adminUnlocked) {
         adminPassInput.value = '';
       }
+      renderOnlineAdminList();
     }
 
     function resetStatsOnly() {
@@ -3608,6 +3670,7 @@
       updateQueueButtonUi();
       updateConnection(`Queueing in ${tier.name} (${rankedElo} ELO)...`);
       updateStatus('Searching for a ranked opponent in your tier...');
+      upsertOnlineSeenPlayer(profile.username, 'In ranked queue');
 
       peer = new Peer(queueId);
       isHost = true;
@@ -3647,6 +3710,7 @@
               return;
             }
             updateConnection(`Opponent found in ${tier.name}. Connecting...`);
+            upsertOnlineSeenPlayer(profile.username, 'Connecting');
             const outgoing = peer.connect(queueId, { reliable: true });
             rankedQueueing = false;
             updateQueueButtonUi();
@@ -3689,6 +3753,7 @@
           const tier = getRankTierByElo(rankedElo);
           updateConnection(`Ranked connected. You are ${myMark}. ${tier.name} ${rankedElo} ELO.`);
         }
+        upsertOnlineSeenPlayer(profile.username, 'Online');
         if (isHost) {
           assignRandomOnlineStarter(true);
         } else {
@@ -3721,6 +3786,7 @@
               games: Number.isFinite(Number(msg.rankedGames)) ? Math.max(0, Math.floor(Number(msg.rankedGames))) : 0
             });
           }
+          upsertOnlineSeenPlayer(opponentName, 'Online');
           updateRankedScoreUi();
           if (gameVariant === 'ranked') {
             const oppTier = getRankTierByElo(opponentRankedElo);
@@ -3813,6 +3879,7 @@
         stopOnlineTurnTimer();
         chatWheel.classList.add('hidden');
         setBoardDisabled(true);
+        upsertOnlineSeenPlayer(opponentName, 'Offline');
         updateConnection(gameVariant === 'ranked' ? 'Disconnected. Tap Queue Ranked to find a new match.' : 'Disconnected. Host or join again.');
         updateStatus(gameVariant === 'ranked' ? 'Ranked session ended.' : 'Online session ended.');
       });
