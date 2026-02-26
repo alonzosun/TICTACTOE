@@ -519,7 +519,7 @@
         inset 0 2px 0 rgba(224, 248, 255, 0.52),
         inset 0 -2px 0 rgba(61, 96, 122, 0.34),
         0 10px 22px rgba(36, 81, 116, 0.34);
-      animation: effect-frostnova 1500ms cubic-bezier(0.2, 0.74, 0.2, 1.12);
+      animation: effect-frostnova 3200ms cubic-bezier(0.2, 0.74, 0.2, 1.08);
     }
 
     .win-particle {
@@ -795,6 +795,19 @@
       animation: frost-glow-pulse 1300ms ease-out forwards;
     }
 
+    .frost-sheet {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9;
+      opacity: 0;
+      background:
+        radial-gradient(circle at 48% 58%, rgba(224, 250, 255, 0.74), rgba(198, 237, 255, 0.46), rgba(178, 222, 249, 0.24), transparent 72%),
+        repeating-linear-gradient(132deg, rgba(219, 248, 255, 0.12) 0 2px, rgba(156, 211, 240, 0.08) 2px 6px),
+        linear-gradient(180deg, rgba(219, 247, 255, 0.2), rgba(146, 199, 229, 0.34));
+      animation: frost-sheet-spread 2450ms ease-out forwards;
+    }
+
     .fall {
       animation: fall-away 900ms cubic-bezier(0.25, 0.8, 0.2, 1) forwards;
       animation-delay: var(--delay, 0ms);
@@ -863,8 +876,8 @@
 
     @keyframes effect-frostnova {
       0% { transform: scale(1); filter: saturate(1); }
-      26% { transform: scale(1.024); filter: saturate(1.2); }
-      54% { transform: scale(1.012); filter: saturate(1.08); }
+      24% { transform: scale(1.018); filter: saturate(1.12); }
+      58% { transform: scale(1.01); filter: saturate(1.04); }
       100% { transform: scale(1); filter: saturate(1); }
     }
 
@@ -1069,6 +1082,23 @@
       100% {
         opacity: 0;
         transform: scale(1.06);
+      }
+    }
+
+    @keyframes frost-sheet-spread {
+      0% {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+      38% {
+        opacity: 0.68;
+      }
+      76% {
+        opacity: 0.92;
+      }
+      100% {
+        opacity: 0.96;
+        transform: scale(1.02);
       }
     }
 
@@ -2295,7 +2325,7 @@
 
     function clearBoardWinEffects() {
       boardElement.classList.remove('effect-classic', 'effect-ember', 'effect-aurora', 'effect-meteor', 'effect-frostnova', 'cracked');
-      boardElement.querySelectorAll('.win-particle, .win-glint, .ember-spark, .smoke-puff, .aurora-ribbon, .aurora-star, .meteor, .meteor-impact, .mega-meteor, .impact-flash, .impact-wave, .frost-ring, .frost-shard, .frost-mist, .snowflake, .frost-glow').forEach((node) => node.remove());
+      boardElement.querySelectorAll('.win-particle, .win-glint, .ember-spark, .smoke-puff, .aurora-ribbon, .aurora-star, .meteor, .meteor-impact, .mega-meteor, .impact-flash, .impact-wave, .frost-ring, .frost-shard, .frost-mist, .snowflake, .frost-glow, .frost-sheet').forEach((node) => node.remove());
       if (winEffectTimer) {
         clearTimeout(winEffectTimer);
         winEffectTimer = null;
@@ -2406,10 +2436,18 @@
     }
 
     function playFrostNovaBlast() {
-      playTone(480, 0.12, 'triangle', 0.08, 0);
-      playTone(300, 0.24, 'sine', 0.09, 0.05);
-      playTone(220, 0.32, 'triangle', 0.12, 0.12);
-      playTone(140, 0.38, 'sawtooth', 0.05, 0.2);
+      playTone(720, 0.2, 'sine', 0.05, 0);
+      playTone(440, 0.42, 'triangle', 0.08, 0.08);
+      playTone(260, 0.62, 'sine', 0.07, 0.15);
+      playTone(160, 0.82, 'triangle', 0.05, 0.3);
+    }
+
+    function playFrostShatterSound() {
+      playTone(980, 0.08, 'square', 0.08, 0);
+      playTone(760, 0.1, 'square', 0.07, 0.03);
+      playTone(520, 0.14, 'triangle', 0.08, 0.08);
+      playTone(220, 0.3, 'sawtooth', 0.09, 0.12);
+      playTone(120, 0.42, 'sawtooth', 0.06, 0.18);
     }
 
     function spawnClassicGlints(count) {
@@ -2474,6 +2512,23 @@
       boardElement.appendChild(glow);
     }
 
+    function spawnFrostSheet() {
+      const sheet = document.createElement('span');
+      sheet.className = 'frost-sheet';
+      boardElement.appendChild(sheet);
+    }
+
+    function getWinEffectRestartDelay() {
+      const equipped = shopState.equipped || 'classic';
+      if (equipped === 'frostnova') {
+        return 3150;
+      }
+      if (equipped === 'meteor') {
+        return 1260;
+      }
+      return 0;
+    }
+
     function triggerEquippedWinAnimation() {
       clearBoardWinEffects();
       const equipped = shopState.equipped || 'classic';
@@ -2510,6 +2565,7 @@
         }, 1160);
       } else if (equipped === 'frostnova') {
         boardElement.classList.add('effect-frostnova');
+        spawnFrostSheet();
         spawnFrostGlow();
         spawnFrostRing();
         spawnFrostShards(48);
@@ -2518,15 +2574,18 @@
         spawnWinParticles(['#d8f7ff', '#9fe5ff', '#7dcfff', '#eefcff'], 54);
         setTimeout(() => {
           boardElement.classList.add('cracked');
+          playFrostShatterSound();
+        }, 2550);
+        setTimeout(() => {
           playFrostNovaBlast();
-        }, 540);
+        }, 260);
       } else {
         return;
       }
 
       winEffectTimer = setTimeout(() => {
         clearBoardWinEffects();
-      }, 1250);
+      }, equipped === 'frostnova' ? 3600 : 1250);
     }
 
     function generateRoomCode() {
@@ -2949,6 +3008,7 @@
         const youWonRound = result === myMark;
         if (youWonRound) {
           const meteorWin = canTriggerMeteorNow();
+          const frostWin = (shopState.equipped || 'classic') === 'frostnova';
           if (result === 'X') {
             rankedScore.x += 1;
           } else {
@@ -2956,7 +3016,7 @@
           }
           triggerWinScoreEffect();
           triggerEquippedWinAnimation();
-          shouldMeteorShatter = meteorWin;
+          shouldMeteorShatter = meteorWin || frostWin;
           playWinCheer();
         } else {
           if (result === 'X') {
@@ -2982,7 +3042,7 @@
 
         setTimeout(() => {
           animatePiecesFallAndRestart();
-        }, shouldMeteorShatter ? 1260 : 0);
+        }, shouldMeteorShatter ? getWinEffectRestartDelay() : 0);
         return;
       }
 
@@ -3001,9 +3061,10 @@
       }
       if (won) {
         const meteorWin = canTriggerMeteorNow();
+        const frostWin = (shopState.equipped || 'classic') === 'frostnova';
         triggerWinScoreEffect();
         triggerEquippedWinAnimation();
-        shouldMeteorShatter = meteorWin;
+        shouldMeteorShatter = meteorWin || frostWin;
         if (mode === 'online') {
           addLosun(10);
           updateStatus('You win! +10 Losun');
@@ -3011,10 +3072,11 @@
           updateStatus('You win! No Losun in VS AI.');
         }
         playWinCheer();
-        if (meteorWin) {
+        const restartDelay = shouldMeteorShatter ? getWinEffectRestartDelay() : 0;
+        if (restartDelay > 0) {
           setTimeout(() => {
             animatePiecesFallAndRestart();
-          }, 1260);
+          }, restartDelay);
           return;
         }
       } else {
