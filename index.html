@@ -349,6 +349,11 @@
       text-shadow: 0 0 14px rgba(255, 206, 89, 0.85);
     }
 
+    .score-effect.score-frostnova {
+      color: #2f5f88;
+      text-shadow: 0 0 16px rgba(146, 220, 255, 0.92);
+    }
+
     .board {
       display: grid;
       grid-template-columns: repeat(var(--board-size, 3), 1fr);
@@ -500,11 +505,21 @@
     .board.effect-meteor {
       box-shadow:
         0 0 0 2px rgba(255, 229, 104, 0.5),
-        0 0 34px rgba(255, 177, 62, 0.62),
+        0 0 48px rgba(255, 177, 62, 0.78),
         inset 0 2px 0 rgba(255, 214, 158, 0.35),
         inset 0 -2px 0 rgba(66, 37, 21, 0.35),
         0 8px 18px rgba(73, 44, 25, 0.26);
-      animation: effect-meteor 950ms cubic-bezier(0.2, 0.74, 0.2, 1.2);
+      animation: effect-meteor 1300ms cubic-bezier(0.2, 0.74, 0.2, 1.2);
+    }
+
+    .board.effect-frostnova {
+      box-shadow:
+        0 0 0 2px rgba(173, 232, 255, 0.58),
+        0 0 54px rgba(163, 223, 255, 0.8),
+        inset 0 2px 0 rgba(224, 248, 255, 0.52),
+        inset 0 -2px 0 rgba(61, 96, 122, 0.34),
+        0 10px 22px rgba(36, 81, 116, 0.34);
+      animation: effect-frostnova 1500ms cubic-bezier(0.2, 0.74, 0.2, 1.12);
     }
 
     .win-particle {
@@ -599,14 +614,14 @@
       position: absolute;
       left: var(--x, 50%);
       top: -26px;
-      width: 12px;
-      height: 12px;
+      width: 15px;
+      height: 15px;
       border-radius: 50%;
       background: radial-gradient(circle at 30% 30%, #fff9cf, var(--c, #ffd35e));
       box-shadow: 0 0 18px rgba(255, 185, 70, 0.68);
       pointer-events: none;
       transform: translateX(-50%) rotate(25deg);
-      animation: meteor-fall 820ms cubic-bezier(0.2, 0.72, 0.22, 1) forwards;
+      animation: meteor-fall 980ms cubic-bezier(0.2, 0.72, 0.22, 1) forwards;
       animation-delay: var(--delay, 0ms);
       z-index: 6;
     }
@@ -628,8 +643,8 @@
       position: absolute;
       left: 50%;
       top: -220px;
-      width: 112px;
-      height: 112px;
+      width: 132px;
+      height: 132px;
       border-radius: 50%;
       background: radial-gradient(circle at 28% 30%, #fff5ca 0%, #ffc973 35%, #b66324 70%, #633015 100%);
       box-shadow:
@@ -637,7 +652,7 @@
         0 0 84px rgba(255, 133, 61, 0.42);
       pointer-events: none;
       transform: translateX(-50%) rotate(22deg);
-      animation: mega-meteor-fall 1250ms cubic-bezier(0.2, 0.76, 0.24, 1) forwards;
+      animation: mega-meteor-fall 1450ms cubic-bezier(0.2, 0.76, 0.24, 1) forwards;
       z-index: 8;
     }
 
@@ -658,15 +673,15 @@
       position: absolute;
       left: 50%;
       top: 66%;
-      width: 18px;
-      height: 18px;
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
       background: radial-gradient(circle, rgba(255, 247, 200, 0.95), rgba(255, 188, 96, 0.25), transparent 75%);
       pointer-events: none;
       transform: translate(-50%, -50%) scale(0.2);
       opacity: 0;
-      animation: impact-flare 560ms ease-out forwards;
-      animation-delay: 1080ms;
+      animation: impact-flare 820ms ease-out forwards;
+      animation-delay: 1180ms;
       z-index: 9;
     }
 
@@ -674,16 +689,110 @@
       position: absolute;
       left: var(--x, 50%);
       top: var(--y, 75%);
-      width: 14px;
-      height: 14px;
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
       background: radial-gradient(circle, rgba(255, 246, 182, 0.95), rgba(255, 170, 83, 0.15), transparent 72%);
       pointer-events: none;
       transform: translate(-50%, -50%) scale(0.2);
       opacity: 0;
-      animation: impact-burst 520ms ease-out forwards;
+      animation: impact-burst 760ms ease-out forwards;
       animation-delay: var(--delay, 0ms);
       z-index: 6;
+    }
+
+    .impact-wave {
+      position: absolute;
+      left: 50%;
+      top: 66%;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 219, 130, 0.8);
+      transform: translate(-50%, -50%) scale(0.3);
+      opacity: 0;
+      pointer-events: none;
+      animation: impact-wave 980ms ease-out forwards;
+      animation-delay: 1150ms;
+      z-index: 8;
+    }
+
+    .frost-ring {
+      position: absolute;
+      left: 50%;
+      top: 54%;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 3px solid rgba(188, 236, 255, 0.9);
+      box-shadow: 0 0 26px rgba(177, 232, 255, 0.84);
+      transform: translate(-50%, -50%) scale(0.2);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 8;
+      animation: frost-ring-expand 980ms ease-out forwards;
+    }
+
+    .frost-shard {
+      position: absolute;
+      left: var(--x, 50%);
+      top: var(--y, 56%);
+      width: 10px;
+      height: 24px;
+      background: linear-gradient(180deg, rgba(227, 249, 255, 0.95), rgba(143, 209, 247, 0.44), rgba(108, 170, 216, 0.22));
+      clip-path: polygon(50% 0, 100% 38%, 78% 100%, 22% 100%, 0 38%);
+      transform: translate(-50%, -50%) rotate(var(--r, 0deg)) scale(0.35);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 7;
+      animation: frost-shard-burst 1050ms cubic-bezier(0.15, 0.8, 0.2, 1) forwards;
+      animation-delay: var(--delay, 0ms);
+    }
+
+    .frost-mist {
+      position: absolute;
+      left: var(--x, 50%);
+      top: var(--y, 58%);
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(219, 247, 255, 0.72), rgba(177, 228, 255, 0.24), transparent 70%);
+      transform: translate(-50%, -50%) scale(0.4);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 6;
+      animation: frost-mist-rise 1200ms ease-out forwards;
+      animation-delay: var(--delay, 0ms);
+    }
+
+    .snowflake {
+      position: absolute;
+      left: var(--x, 50%);
+      top: -14px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(235, 252, 255, 0.96), rgba(171, 226, 252, 0.58));
+      box-shadow: 0 0 8px rgba(183, 232, 255, 0.74);
+      transform: translateX(-50%);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 7;
+      animation: snowflake-fall 950ms ease-out forwards;
+      animation-delay: var(--delay, 0ms);
+    }
+
+    .frost-glow {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+      opacity: 0;
+      background:
+        radial-gradient(circle at 50% 56%, rgba(210, 246, 255, 0.42), transparent 44%),
+        radial-gradient(circle at 20% 18%, rgba(221, 250, 255, 0.26), transparent 34%),
+        radial-gradient(circle at 78% 24%, rgba(190, 236, 255, 0.24), transparent 36%);
+      animation: frost-glow-pulse 1300ms ease-out forwards;
     }
 
     .fall {
@@ -744,9 +853,19 @@
     }
 
     @keyframes effect-meteor {
-      0% { transform: scale(1); }
-      30% { transform: scale(1.028); }
-      100% { transform: scale(1); }
+      0% { transform: scale(1) translate(0, 0); }
+      18% { transform: scale(1.015) translate(-2px, 1px); }
+      32% { transform: scale(1.025) translate(2px, -1px); }
+      44% { transform: scale(1.02) translate(-3px, 2px); }
+      56% { transform: scale(1.015) translate(3px, -2px); }
+      100% { transform: scale(1) translate(0, 0); }
+    }
+
+    @keyframes effect-frostnova {
+      0% { transform: scale(1); filter: saturate(1); }
+      26% { transform: scale(1.024); filter: saturate(1.2); }
+      54% { transform: scale(1.012); filter: saturate(1.08); }
+      100% { transform: scale(1); filter: saturate(1); }
     }
 
     @keyframes particle-burst {
@@ -820,7 +939,7 @@
         opacity: 1;
       }
       100% {
-        transform: translate(calc(-50% + var(--dx, 0px)), 340px) rotate(25deg) scale(0.2);
+        transform: translate(calc(-50% + var(--dx, 0px)), 380px) rotate(25deg) scale(0.15);
         opacity: 0;
       }
     }
@@ -834,7 +953,7 @@
         opacity: 1;
       }
       100% {
-        transform: translate(calc(-50% + 6px), 315px) rotate(35deg) scale(0.88);
+        transform: translate(calc(-50% + 6px), 350px) rotate(35deg) scale(0.9);
         opacity: 0;
       }
     }
@@ -844,13 +963,13 @@
         opacity: 0;
         transform: translate(-50%, -50%) scale(0.1);
       }
-      40% {
+      35% {
         opacity: 1;
-        transform: translate(-50%, -50%) scale(3.8);
+        transform: translate(-50%, -50%) scale(5.8);
       }
       100% {
         opacity: 0;
-        transform: translate(-50%, -50%) scale(5.2);
+        transform: translate(-50%, -50%) scale(7.2);
       }
     }
 
@@ -859,13 +978,97 @@
         opacity: 0;
         transform: translate(-50%, -50%) scale(0.2);
       }
-      40% {
+      42% {
         opacity: 0.95;
-        transform: translate(-50%, -50%) scale(1.6);
+        transform: translate(-50%, -50%) scale(2.1);
       }
       100% {
         opacity: 0;
-        transform: translate(-50%, -50%) scale(2.2);
+        transform: translate(-50%, -50%) scale(2.9);
+      }
+    }
+
+    @keyframes impact-wave {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.2);
+      }
+      30% {
+        opacity: 0.9;
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(8.8);
+      }
+    }
+
+    @keyframes frost-ring-expand {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.18);
+      }
+      30% {
+        opacity: 0.92;
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(9.2);
+      }
+    }
+
+    @keyframes frost-shard-burst {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) rotate(var(--r, 0deg)) scale(0.2);
+      }
+      30% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+        transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, -120px))) rotate(var(--r, 0deg)) scale(1.1);
+      }
+    }
+
+    @keyframes frost-mist-rise {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.35);
+      }
+      34% {
+        opacity: 0.85;
+      }
+      100% {
+        opacity: 0;
+        transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, -70px))) scale(2);
+      }
+    }
+
+    @keyframes snowflake-fall {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -8px) scale(0.7);
+      }
+      24% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+        transform: translate(calc(-50% + var(--dx, 0px)), 188px) scale(0.55);
+      }
+    }
+
+    @keyframes frost-glow-pulse {
+      0% {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+      30% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+        transform: scale(1.06);
       }
     }
 
@@ -1185,7 +1388,7 @@
 
   <section class="game hidden" id="leaderboardScreen" aria-label="Leaderboard screen">
     <h1>Leaderboard</h1>
-    <p class="profile-help">Top players saved on this device from online and ranked matches.</p>
+    <p class="profile-help">Top ranked players saved on this device (ranked matches only).</p>
     <div id="leaderboardList" class="leaderboard-list" aria-live="polite"></div>
     <div class="controls">
       <button id="leaderboardBackBtn" class="start">Back</button>
@@ -1295,6 +1498,7 @@
     const LOSUN_STORAGE_KEY = 'alons_tic_losun';
     const PROFILE_STORAGE_KEY = 'alons_tic_profile';
     const SHOP_STORAGE_KEY = 'alons_tic_shop';
+    const OFFER_STORAGE_KEY = 'alons_tic_offer_window';
     const ELO_STORAGE_KEY = 'alons_tic_ranked_elo';
     const LEADERBOARD_STORAGE_KEY = 'alons_tic_leaderboard';
     const ROOM_ID_PREFIX = 'tictac-';
@@ -1304,12 +1508,15 @@
     const MAX_RANKED_ELO = 3000;
     const ONLINE_TURN_SECONDS = 18;
     const ONLINE_TIMEOUT_FORFEIT_LIMIT = 2;
+    const METEOR_MAX_USES = 20;
+    const LIMITED_OFFER_MS = 7 * 24 * 60 * 60 * 1000;
 
     const WIN_ANIMATIONS = [
       { id: 'classic', name: 'Classic Cheer', cost: 0, description: 'Golden celebratory burst over the board.' },
       { id: 'ember', name: 'Ember Burst', cost: 120, description: 'Real ember sparks rise from the board.' },
       { id: 'aurora', name: 'Aurora Wave', cost: 180, description: 'Layered aurora ribbons sweep across the board.' },
-      { id: 'meteor', name: 'Meteor Shower', cost: 260, description: 'Meteors fall onto the board with glowing trails.' }
+      { id: 'meteor', name: 'Meteor Shower', cost: 260, description: 'One massive impact sequence. Limited to 20 total uses.' },
+      { id: 'frostnova', name: 'Frost Nova', cost: 500, description: 'Exclusive event effect: an ultra-detailed frozen blast.' }
     ];
 
     let boardSize = 3;
@@ -1346,13 +1553,14 @@
     let rankedElo = DEFAULT_RANKED_ELO;
     let profile = { username: 'Player', games: 0, wins: 0, losses: 0, draws: 0 };
     let leaderboard = [];
-    let shopState = { owned: { classic: true }, equipped: 'classic' };
+    let shopState = { owned: { classic: true }, equipped: 'classic', meteorUses: METEOR_MAX_USES };
     let adminUnlocked = false;
     let statsTapCount = 0;
     let lastStatsTapAt = 0;
     let winEffectTimer = null;
     let scoreEffectTimer = null;
     let shouldMeteorShatter = false;
+    let offerStartAt = Date.now();
     let onlineTurnTimer = null;
     let onlineTurnPlayer = null;
     let onlineTurnTimeLeft = ONLINE_TURN_SECONDS;
@@ -1458,7 +1666,7 @@
     }
 
     function clearScoreEffect() {
-      scoreEffectText.classList.remove('active', 'score-classic', 'score-ember', 'score-aurora', 'score-meteor');
+      scoreEffectText.classList.remove('active', 'score-classic', 'score-ember', 'score-aurora', 'score-meteor', 'score-frostnova');
       scoreEffectText.textContent = '';
       if (scoreEffectTimer) {
         clearTimeout(scoreEffectTimer);
@@ -1589,7 +1797,7 @@
     function saveUsernameFromInput() {
       profile.username = sanitizeUsername(usernameInput.value);
       saveProfile();
-      upsertLeaderboardEntry(profile.username, { games: profile.games, wins: profile.wins, losses: profile.losses, draws: profile.draws, elo: rankedElo });
+      upsertLeaderboardEntry(profile.username, { elo: rankedElo });
       updateConnection(`Saved as ${profile.username}.`);
     }
 
@@ -1598,13 +1806,13 @@
         .sort((a, b) => (b.elo - a.elo) || (b.wins - a.wins) || (b.games - a.games))
         .slice(0, 10);
       if (!top.length) {
-        leaderboardList.innerHTML = '<p class="profile-help">No entries yet. Play online or ranked games.</p>';
+        leaderboardList.innerHTML = '<p class="profile-help">No entries yet. Finish ranked matches to appear here.</p>';
         return;
       }
       leaderboardList.innerHTML = top.map((entry, i) => `
         <div class="leaderboard-item">
           <span>#${i + 1} ${entry.username}</span>
-          <span>ELO ${entry.elo} | W ${entry.wins} / G ${entry.games}</span>
+          <span>ELO ${entry.elo} | W-L ${entry.wins}-${entry.losses} | G ${entry.games}</span>
         </div>
       `).join('');
     }
@@ -1622,7 +1830,7 @@
         const parsed = raw ? JSON.parse(raw) : null;
         if (Array.isArray(parsed)) {
           leaderboard = parsed
-            .filter((entry) => entry && typeof entry.username === 'string')
+            .filter((entry) => entry && typeof entry.username === 'string' && entry.rankedOnly === true)
             .map((entry) => ({
               username: sanitizeUsername(entry.username),
               elo: Number.isFinite(Number(entry.elo)) ? Math.max(MIN_RANKED_ELO, Math.min(MAX_RANKED_ELO, Math.floor(Number(entry.elo)))) : DEFAULT_RANKED_ELO,
@@ -1630,7 +1838,8 @@
               games: Number.isFinite(Number(entry.games)) ? Math.max(0, Math.floor(Number(entry.games))) : 0,
               losses: Number.isFinite(Number(entry.losses)) ? Math.max(0, Math.floor(Number(entry.losses))) : 0,
               draws: Number.isFinite(Number(entry.draws)) ? Math.max(0, Math.floor(Number(entry.draws))) : 0,
-              seenAt: Number.isFinite(Number(entry.seenAt)) ? Number(entry.seenAt) : Date.now()
+              seenAt: Number.isFinite(Number(entry.seenAt)) ? Number(entry.seenAt) : Date.now(),
+              rankedOnly: true
             }));
         } else {
           leaderboard = [];
@@ -1651,6 +1860,7 @@
         existing.losses = Number.isFinite(Number(patch.losses)) ? Math.max(0, Math.floor(Number(patch.losses))) : existing.losses;
         existing.draws = Number.isFinite(Number(patch.draws)) ? Math.max(0, Math.floor(Number(patch.draws))) : existing.draws;
         existing.seenAt = Date.now();
+        existing.rankedOnly = true;
       } else {
         leaderboard.push({
           username: cleanName,
@@ -1659,10 +1869,30 @@
           games: Number.isFinite(Number(patch.games)) ? Math.max(0, Math.floor(Number(patch.games))) : 0,
           losses: Number.isFinite(Number(patch.losses)) ? Math.max(0, Math.floor(Number(patch.losses))) : 0,
           draws: Number.isFinite(Number(patch.draws)) ? Math.max(0, Math.floor(Number(patch.draws))) : 0,
-          seenAt: Date.now()
+          seenAt: Date.now(),
+          rankedOnly: true
         });
       }
       saveLeaderboard();
+    }
+
+    function getLeaderboardEntry(username) {
+      const cleanName = sanitizeUsername(username || 'Player');
+      return leaderboard.find((entry) => entry.username === cleanName) || null;
+    }
+
+    function recordRankedLeaderboardResult(won) {
+      const current = getLeaderboardEntry(profile.username);
+      const nextGames = (current ? current.games : 0) + 1;
+      const nextWins = (current ? current.wins : 0) + (won ? 1 : 0);
+      const nextLosses = (current ? current.losses : 0) + (won ? 0 : 1);
+      upsertLeaderboardEntry(profile.username, {
+        elo: rankedElo,
+        games: nextGames,
+        wins: nextWins,
+        losses: nextLosses,
+        draws: current ? current.draws : 0
+      });
     }
 
     function showChatFeed(message) {
@@ -1704,6 +1934,7 @@
         }
         updateRankedScoreUi();
         const iWonMatch = winnerMark === myMark;
+        recordRankedLeaderboardResult(iWonMatch);
         applyRankedEloResult(iWonMatch ? 1 : 0);
         updateStatus(iWonMatch ? 'Opponent forfeited from timeouts. Ranked win.' : 'You forfeited from timeouts.');
       } else {
@@ -1782,7 +2013,6 @@
         profile.losses += 1;
       }
       saveProfile();
-      upsertLeaderboardEntry(profile.username, { games: profile.games, wins: profile.wins, losses: profile.losses, draws: profile.draws, elo: rankedElo });
     }
 
     function setActiveScreen(screen) {
@@ -1880,6 +2110,70 @@
       return Boolean(shopState.owned[id]);
     }
 
+    function getMeteorUses() {
+      return Math.max(0, Math.min(METEOR_MAX_USES, Math.floor(Number(shopState.meteorUses) || 0)));
+    }
+
+    function hasMeteorCharges() {
+      return getMeteorUses() > 0;
+    }
+
+    function canTriggerMeteorNow() {
+      return shopState.equipped === 'meteor' && hasMeteorCharges();
+    }
+
+    function ensureOfferWindow() {
+      try {
+        const raw = localStorage.getItem(OFFER_STORAGE_KEY);
+        const parsed = Number(raw);
+        if (Number.isFinite(parsed) && parsed > 0) {
+          offerStartAt = parsed;
+          return;
+        }
+      } catch (err) {}
+      offerStartAt = Date.now();
+      try {
+        localStorage.setItem(OFFER_STORAGE_KEY, String(offerStartAt));
+      } catch (err) {}
+    }
+
+    function getFrostOfferMsLeft() {
+      const endAt = offerStartAt + LIMITED_OFFER_MS;
+      return Math.max(0, endAt - Date.now());
+    }
+
+    function isFrostOfferActive() {
+      return getFrostOfferMsLeft() > 0;
+    }
+
+    function frostOfferLabel() {
+      const msLeft = getFrostOfferMsLeft();
+      if (msLeft <= 0) {
+        return 'Expired';
+      }
+      const dayMs = 24 * 60 * 60 * 1000;
+      const hourMs = 60 * 60 * 1000;
+      const days = Math.floor(msLeft / dayMs);
+      const hours = Math.floor((msLeft % dayMs) / hourMs);
+      return `${days}d ${hours}h left`;
+    }
+
+    function consumeMeteorCharge() {
+      if (!hasMeteorCharges()) {
+        if (shopState.equipped === 'meteor') {
+          shopState.equipped = 'classic';
+          saveShopState();
+        }
+        return false;
+      }
+      shopState.meteorUses = getMeteorUses() - 1;
+      if (shopState.equipped === 'meteor' && shopState.meteorUses <= 0) {
+        shopState.equipped = 'classic';
+      }
+      saveShopState();
+      return true;
+    }
+
     function saveShopState() {
       try {
         localStorage.setItem(SHOP_STORAGE_KEY, JSON.stringify(shopState));
@@ -1901,11 +2195,17 @@
           const equipped = typeof parsed.equipped === 'string' ? parsed.equipped : 'classic';
           shopState = {
             owned,
-            equipped: owned[equipped] ? equipped : 'classic'
+            equipped: owned[equipped] ? equipped : 'classic',
+            meteorUses: Number.isFinite(Number(parsed.meteorUses))
+              ? Math.max(0, Math.min(METEOR_MAX_USES, Math.floor(Number(parsed.meteorUses))))
+              : (owned.meteor ? METEOR_MAX_USES : 0)
           };
+          if (shopState.equipped === 'meteor' && shopState.meteorUses <= 0) {
+            shopState.equipped = 'classic';
+          }
         }
       } catch (err) {
-        shopState = { owned: { classic: true }, equipped: 'classic' };
+        shopState = { owned: { classic: true }, equipped: 'classic', meteorUses: 0 };
       }
       renderShopItems();
     }
@@ -1915,11 +2215,18 @@
       if (!item || hasOwnedAnimation(id)) {
         return;
       }
+      if (id === 'frostnova' && !isFrostOfferActive()) {
+        updateConnection('Frost Nova event ended.');
+        return;
+      }
       if (!spendLosun(item.cost)) {
         updateConnection('Not enough Losun for this animation.');
         return;
       }
       shopState.owned[id] = true;
+      if (id === 'meteor') {
+        shopState.meteorUses = METEOR_MAX_USES;
+      }
       shopState.equipped = id;
       saveShopState();
       updateConnection(`Bought and equipped ${item.name}.`);
@@ -1928,6 +2235,10 @@
     function equipAnimation(id) {
       const item = WIN_ANIMATIONS.find((animation) => animation.id === id);
       if (!item || !hasOwnedAnimation(id)) {
+        return;
+      }
+      if (id === 'meteor' && !hasMeteorCharges()) {
+        updateConnection('Meteor Shower has no uses left (0/20).');
         return;
       }
       shopState.equipped = id;
@@ -1944,17 +2255,23 @@
       WIN_ANIMATIONS.forEach((item) => {
         const owned = hasOwnedAnimation(item.id);
         const equipped = shopState.equipped === item.id;
-        const actionLabel = owned ? (equipped ? 'Equipped' : 'Equip') : `Buy ${item.cost} Losun`;
+        const meteorLabel = item.id === 'meteor' ? ` | Uses ${getMeteorUses()}/${METEOR_MAX_USES}` : '';
+        const frostLabel = item.id === 'frostnova' ? ` | Limited: ${frostOfferLabel()}` : '';
+        const meteorOut = item.id === 'meteor' && owned && !hasMeteorCharges();
+        const frostExpired = item.id === 'frostnova' && !owned && !isFrostOfferActive();
+        const actionLabel = owned
+          ? (equipped ? 'Equipped' : (meteorOut ? 'Out of Uses' : 'Equip'))
+          : (frostExpired ? 'Expired' : `Buy ${item.cost} Losun`);
         const actionClass = owned && equipped ? 'start' : (owned ? 'start' : 'reset');
         const actionType = owned ? 'equip' : 'buy';
-        const disabled = equipped ? 'disabled' : '';
+        const disabled = (equipped || meteorOut || frostExpired) ? 'disabled' : '';
 
         const card = document.createElement('article');
         card.className = 'shop-item';
         card.innerHTML = `
           <div class="shop-item-head">
             <span class="shop-item-name">${item.name}</span>
-            <span class="shop-item-price">${item.cost === 0 ? 'Free' : `${item.cost} Losun`}</span>
+            <span class="shop-item-price">${item.cost === 0 ? 'Free' : `${item.cost} Losun`}${meteorLabel}${frostLabel}</span>
           </div>
           <p class="shop-item-desc">${item.description}</p>
           <button class="${actionClass}" data-action="${actionType}" data-item-id="${item.id}" ${disabled}>${actionLabel}</button>
@@ -1977,8 +2294,8 @@
     }
 
     function clearBoardWinEffects() {
-      boardElement.classList.remove('effect-classic', 'effect-ember', 'effect-aurora', 'effect-meteor', 'cracked');
-      boardElement.querySelectorAll('.win-particle, .win-glint, .ember-spark, .smoke-puff, .aurora-ribbon, .aurora-star, .meteor, .meteor-impact, .mega-meteor, .impact-flash').forEach((node) => node.remove());
+      boardElement.classList.remove('effect-classic', 'effect-ember', 'effect-aurora', 'effect-meteor', 'effect-frostnova', 'cracked');
+      boardElement.querySelectorAll('.win-particle, .win-glint, .ember-spark, .smoke-puff, .aurora-ribbon, .aurora-star, .meteor, .meteor-impact, .mega-meteor, .impact-flash, .impact-wave, .frost-ring, .frost-shard, .frost-mist, .snowflake, .frost-glow').forEach((node) => node.remove());
       if (winEffectTimer) {
         clearTimeout(winEffectTimer);
         winEffectTimer = null;
@@ -2075,6 +2392,10 @@
       const flash = document.createElement('span');
       flash.className = 'impact-flash';
       boardElement.appendChild(flash);
+
+      const wave = document.createElement('span');
+      wave.className = 'impact-wave';
+      boardElement.appendChild(wave);
     }
 
     function playMeteorImpactExplosion() {
@@ -2082,6 +2403,13 @@
       playTone(39, 0.48, 'square', 0.14, 0.03);
       playTone(96, 0.12, 'triangle', 0.1, 0.02);
       playTone(72, 0.18, 'triangle', 0.08, 0.14);
+    }
+
+    function playFrostNovaBlast() {
+      playTone(480, 0.12, 'triangle', 0.08, 0);
+      playTone(300, 0.24, 'sine', 0.09, 0.05);
+      playTone(220, 0.32, 'triangle', 0.12, 0.12);
+      playTone(140, 0.38, 'sawtooth', 0.05, 0.2);
     }
 
     function spawnClassicGlints(count) {
@@ -2094,6 +2422,56 @@
         glint.style.animationDelay = `${Math.floor(Math.random() * 160)}ms`;
         boardElement.appendChild(glint);
       }
+    }
+
+    function spawnFrostRing() {
+      const ring = document.createElement('span');
+      ring.className = 'frost-ring';
+      boardElement.appendChild(ring);
+    }
+
+    function spawnFrostShards(count) {
+      for (let i = 0; i < count; i += 1) {
+        const shard = document.createElement('span');
+        shard.className = 'frost-shard';
+        shard.style.setProperty('--x', `${50 + (-8 + Math.random() * 16)}%`);
+        shard.style.setProperty('--y', `${56 + (-8 + Math.random() * 14)}%`);
+        shard.style.setProperty('--dx', `${-220 + Math.random() * 440}px`);
+        shard.style.setProperty('--dy', `${-190 + Math.random() * 220}px`);
+        shard.style.setProperty('--r', `${Math.floor(Math.random() * 360)}deg`);
+        shard.style.setProperty('--delay', `${Math.floor(Math.random() * 180)}ms`);
+        boardElement.appendChild(shard);
+      }
+    }
+
+    function spawnFrostMist(count) {
+      for (let i = 0; i < count; i += 1) {
+        const mist = document.createElement('span');
+        mist.className = 'frost-mist';
+        mist.style.setProperty('--x', `${42 + Math.random() * 16}%`);
+        mist.style.setProperty('--y', `${54 + Math.random() * 14}%`);
+        mist.style.setProperty('--dx', `${-90 + Math.random() * 180}px`);
+        mist.style.setProperty('--dy', `${-60 + Math.random() * 130}px`);
+        mist.style.setProperty('--delay', `${Math.floor(Math.random() * 260)}ms`);
+        boardElement.appendChild(mist);
+      }
+    }
+
+    function spawnSnowflakes(count) {
+      for (let i = 0; i < count; i += 1) {
+        const flake = document.createElement('span');
+        flake.className = 'snowflake';
+        flake.style.setProperty('--x', `${6 + Math.random() * 88}%`);
+        flake.style.setProperty('--dx', `${-40 + Math.random() * 80}px`);
+        flake.style.setProperty('--delay', `${Math.floor(Math.random() * 520)}ms`);
+        boardElement.appendChild(flake);
+      }
+    }
+
+    function spawnFrostGlow() {
+      const glow = document.createElement('span');
+      glow.className = 'frost-glow';
+      boardElement.appendChild(glow);
     }
 
     function triggerEquippedWinAnimation() {
@@ -2115,15 +2493,33 @@
         spawnAuroraStars(20);
         spawnWinParticles(['#89f5ff', '#9ea8ff', '#5ff0bf'], 14);
       } else if (equipped === 'meteor') {
+        if (!consumeMeteorCharge()) {
+          updateConnection('Meteor Shower is out of uses (0/20). Switched to Classic Cheer.');
+          triggerEquippedWinAnimation();
+          return;
+        }
         boardElement.classList.add('effect-meteor');
         spawnMegaMeteor();
-        spawnMeteors(2);
-        spawnMeteorImpacts(12);
-        spawnWinParticles(['#ffd35e', '#ffaf4d', '#fff2b5'], 26);
+        setTimeout(() => spawnMegaMeteor(), 160);
+        spawnMeteors(12);
+        spawnMeteorImpacts(28);
+        spawnWinParticles(['#ffd35e', '#ffaf4d', '#fff2b5'], 54);
         setTimeout(() => {
           boardElement.classList.add('cracked');
           playMeteorImpactExplosion();
-        }, 1080);
+        }, 1160);
+      } else if (equipped === 'frostnova') {
+        boardElement.classList.add('effect-frostnova');
+        spawnFrostGlow();
+        spawnFrostRing();
+        spawnFrostShards(48);
+        spawnFrostMist(34);
+        spawnSnowflakes(64);
+        spawnWinParticles(['#d8f7ff', '#9fe5ff', '#7dcfff', '#eefcff'], 54);
+        setTimeout(() => {
+          boardElement.classList.add('cracked');
+          playFrostNovaBlast();
+        }, 540);
       } else {
         return;
       }
@@ -2204,7 +2600,7 @@
       const k = 28;
       rankedElo = Math.max(MIN_RANKED_ELO, Math.min(MAX_RANKED_ELO, Math.round(rankedElo + k * (actualScore - expected))));
       saveRankedElo();
-      upsertLeaderboardEntry(profile.username, { elo: rankedElo, wins: profile.wins, games: profile.games, losses: profile.losses, draws: profile.draws });
+      upsertLeaderboardEntry(profile.username, { elo: rankedElo });
       sendOnlineMessage({ type: 'ranked-elo-update', elo: rankedElo });
     }
 
@@ -2552,6 +2948,7 @@
 
         const youWonRound = result === myMark;
         if (youWonRound) {
+          const meteorWin = canTriggerMeteorNow();
           if (result === 'X') {
             rankedScore.x += 1;
           } else {
@@ -2559,7 +2956,7 @@
           }
           triggerWinScoreEffect();
           triggerEquippedWinAnimation();
-          shouldMeteorShatter = shopState.equipped === 'meteor';
+          shouldMeteorShatter = meteorWin;
           playWinCheer();
         } else {
           if (result === 'X') {
@@ -2574,6 +2971,7 @@
         if (rankedScore.x >= rankedTargetWins || rankedScore.o >= rankedTargetWins) {
           gameStarted = false;
           const iWonMatch = (myMark === 'X' ? rankedScore.x : rankedScore.o) > (myMark === 'X' ? rankedScore.o : rankedScore.x);
+          recordRankedLeaderboardResult(iWonMatch);
           applyRankedEloResult(iWonMatch ? 1 : 0);
           const yourWins = myMark === 'X' ? rankedScore.x : rankedScore.o;
           const oppWins = myMark === 'X' ? rankedScore.o : rankedScore.x;
@@ -2602,7 +3000,7 @@
         recordMatchResult(result, won);
       }
       if (won) {
-        const meteorWin = shopState.equipped === 'meteor';
+        const meteorWin = canTriggerMeteorNow();
         triggerWinScoreEffect();
         triggerEquippedWinAnimation();
         shouldMeteorShatter = meteorWin;
@@ -2857,8 +3255,9 @@
           username: profile.username,
           rankedElo,
           ranked: gameVariant === 'ranked',
-          wins: profile.wins,
-          games: profile.games
+          rankedWins: getLeaderboardEntry(profile.username)?.wins || 0,
+          rankedLosses: getLeaderboardEntry(profile.username)?.losses || 0,
+          rankedGames: getLeaderboardEntry(profile.username)?.games || 0
         });
         updateConnection(`Connected. You are ${myMark}.`);
         if (gameVariant === 'ranked') {
@@ -2889,11 +3288,14 @@
           } else {
             opponentRankedElo = DEFAULT_RANKED_ELO;
           }
-          upsertLeaderboardEntry(opponentName, {
-            elo: opponentRankedElo,
-            wins: Number.isFinite(Number(msg.wins)) ? Math.max(0, Math.floor(Number(msg.wins))) : 0,
-            games: Number.isFinite(Number(msg.games)) ? Math.max(0, Math.floor(Number(msg.games))) : 0
-          });
+          if (msg.ranked === true || gameVariant === 'ranked') {
+            upsertLeaderboardEntry(opponentName, {
+              elo: opponentRankedElo,
+              wins: Number.isFinite(Number(msg.rankedWins)) ? Math.max(0, Math.floor(Number(msg.rankedWins))) : 0,
+              losses: Number.isFinite(Number(msg.rankedLosses)) ? Math.max(0, Math.floor(Number(msg.rankedLosses))) : 0,
+              games: Number.isFinite(Number(msg.rankedGames)) ? Math.max(0, Math.floor(Number(msg.rankedGames))) : 0
+            });
+          }
           updateRankedScoreUi();
           if (gameVariant === 'ranked') {
             const oppTier = getRankTierByElo(opponentRankedElo);
@@ -2947,6 +3349,7 @@
                 o: Math.max(0, Math.floor(Number(msg.score.o) || 0))
               };
             }
+            recordRankedLeaderboardResult(iWon);
             applyRankedEloResult(iWon ? 1 : 0);
             updateRankedScoreUi();
           }
@@ -3289,8 +3692,9 @@
     loadLosun();
     loadRankedElo();
     loadLeaderboard();
+    ensureOfferWindow();
     loadShopState();
-    upsertLeaderboardEntry(profile.username, { elo: rankedElo, wins: profile.wins, games: profile.games, losses: profile.losses, draws: profile.draws });
+    upsertLeaderboardEntry(profile.username, { elo: rankedElo });
     updateAdminUi();
     window.spendLosun = spendLosun;
     setActiveScreen('menu');
