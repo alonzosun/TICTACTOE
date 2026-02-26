@@ -915,6 +915,55 @@
       min-height: 1.4em;
     }
 
+    .turn-timer,
+    .chat-feed {
+      margin: 0 0 8px;
+      text-align: center;
+      font-size: 0.92rem;
+      min-height: 1.3em;
+      font-weight: 700;
+    }
+
+    .chat-feed {
+      color: #5a3e2a;
+    }
+
+    .chat-wheel {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin: 0 0 10px;
+    }
+
+    .chat-btn {
+      border: 2px solid var(--line);
+      background: #fffaf1;
+      color: var(--text);
+      border-radius: 10px;
+      font-weight: 700;
+      height: 38px;
+      cursor: pointer;
+    }
+
+    .leaderboard-list {
+      margin: 12px 0 14px;
+      display: grid;
+      gap: 8px;
+      max-height: 340px;
+      overflow: auto;
+    }
+
+    .leaderboard-item {
+      border: 2px solid var(--line);
+      background: #fffaf1;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
     .ranked-score {
       margin: 0 0 10px;
       text-align: center;
@@ -955,7 +1004,8 @@
       .mode,
       .room-code,
       .host,
-      .join {
+      .join,
+      .chat-btn {
         height: 48px;
         font-size: 1rem;
       }
@@ -986,6 +1036,7 @@
       <button id="rankedMenuBtn" class="menu-btn">Ranked</button>
       <button id="shopMenuBtn" class="menu-btn">Shop</button>
       <button id="statsMenuBtn" class="menu-btn">Stats</button>
+      <button id="leaderboardMenuBtn" class="menu-btn">Leaderboard</button>
     </div>
   </section>
 
@@ -1030,6 +1081,15 @@
     </div>
   </section>
 
+  <section class="game hidden" id="leaderboardScreen" aria-label="Leaderboard screen">
+    <h1>Leaderboard</h1>
+    <p class="profile-help">Top players saved on this device from online and ranked matches.</p>
+    <div id="leaderboardList" class="leaderboard-list" aria-live="polite"></div>
+    <div class="controls">
+      <button id="leaderboardBackBtn" class="start">Back</button>
+    </div>
+  </section>
+
   <main class="game hidden" id="boardScreen" aria-label="Tic-Tac-Toe game">
     <h1>Alons Tic Tac</h1>
 
@@ -1054,6 +1114,14 @@
     </div>
 
     <p class="connection" id="connectionText" aria-live="polite"></p>
+    <p class="turn-timer" id="turnTimerText" aria-live="polite"></p>
+    <p class="chat-feed" id="chatFeedText" aria-live="polite"></p>
+    <div class="chat-wheel hidden" id="chatWheel">
+      <button class="chat-btn" data-chat="gg">GG</button>
+      <button class="chat-btn" data-chat="nice">Nice move</button>
+      <button class="chat-btn" data-chat="rematch">Rematch?</button>
+      <button class="chat-btn" data-chat="glhf">GLHF</button>
+    </div>
     <p class="status" id="status" aria-live="polite"></p>
     <p class="ranked-score hidden" id="rankedScoreText" aria-live="polite"></p>
     <p class="score-effect" id="scoreEffect" aria-live="polite"></p>
@@ -1084,6 +1152,9 @@
     const joinBtn = document.getElementById('joinBtn');
     const queueBtn = document.getElementById('queueBtn');
     const connectionText = document.getElementById('connectionText');
+    const turnTimerText = document.getElementById('turnTimerText');
+    const chatFeedText = document.getElementById('chatFeedText');
+    const chatWheel = document.getElementById('chatWheel');
     const rankedScoreText = document.getElementById('rankedScoreText');
     const losunValue = document.getElementById('losunValue');
     const menuScreen = document.getElementById('menuScreen');
@@ -1091,10 +1162,13 @@
     const shopScreen = document.getElementById('shopScreen');
     const boardElement = document.querySelector('.board');
     const statsScreen = document.getElementById('statsScreen');
+    const leaderboardScreen = document.getElementById('leaderboardScreen');
     const playMenuBtn = document.getElementById('playMenuBtn');
     const rankedMenuBtn = document.getElementById('rankedMenuBtn');
     const shopMenuBtn = document.getElementById('shopMenuBtn');
     const statsMenuBtn = document.getElementById('statsMenuBtn');
+    const leaderboardMenuBtn = document.getElementById('leaderboardMenuBtn');
+    const leaderboardBackBtn = document.getElementById('leaderboardBackBtn');
     const shopBackBtn = document.getElementById('shopBackBtn');
     const statsBackBtn = document.getElementById('statsBackBtn');
     const menuBtn = document.getElementById('menuBtn');
@@ -1107,6 +1181,7 @@
     const drawsCount = document.getElementById('drawsCount');
     const shopLosunValue = document.getElementById('shopLosunValue');
     const shopItems = document.getElementById('shopItems');
+    const leaderboardList = document.getElementById('leaderboardList');
     const adminPanel = document.getElementById('adminPanel');
     const adminPassInput = document.getElementById('adminPassInput');
     const adminUnlockBtn = document.getElementById('adminUnlockBtn');
@@ -1119,11 +1194,14 @@
     const PROFILE_STORAGE_KEY = 'alons_tic_profile';
     const SHOP_STORAGE_KEY = 'alons_tic_shop';
     const ELO_STORAGE_KEY = 'alons_tic_ranked_elo';
+    const LEADERBOARD_STORAGE_KEY = 'alons_tic_leaderboard';
     const ROOM_ID_PREFIX = 'tictac-';
     const OWNER_ADMIN_CODE = 'alonzosun';
     const DEFAULT_RANKED_ELO = 1000;
     const MIN_RANKED_ELO = 100;
     const MAX_RANKED_ELO = 3000;
+    const ONLINE_TURN_SECONDS = 18;
+    const ONLINE_TIMEOUT_FORFEIT_LIMIT = 2;
 
     const WIN_ANIMATIONS = [
       { id: 'classic', name: 'Classic Cheer', cost: 0, description: 'Golden celebratory burst over the board.' },
@@ -1165,6 +1243,7 @@
     let losun = 0;
     let rankedElo = DEFAULT_RANKED_ELO;
     let profile = { username: 'Player', games: 0, wins: 0, losses: 0, draws: 0 };
+    let leaderboard = [];
     let shopState = { owned: { classic: true }, equipped: 'classic' };
     let adminUnlocked = false;
     let statsTapCount = 0;
@@ -1172,6 +1251,10 @@
     let winEffectTimer = null;
     let scoreEffectTimer = null;
     let shouldMeteorShatter = false;
+    let onlineTurnTimer = null;
+    let onlineTurnPlayer = null;
+    let onlineTurnTimeLeft = ONLINE_TURN_SECONDS;
+    let timeoutCounts = { X: 0, O: 0 };
 
     function updateStatus(message) {
       statusText.textContent = message;
@@ -1404,7 +1487,187 @@
     function saveUsernameFromInput() {
       profile.username = sanitizeUsername(usernameInput.value);
       saveProfile();
+      upsertLeaderboardEntry(profile.username, { games: profile.games, wins: profile.wins, losses: profile.losses, draws: profile.draws, elo: rankedElo });
       updateConnection(`Saved as ${profile.username}.`);
+    }
+
+    function renderLeaderboard() {
+      const top = [...leaderboard]
+        .sort((a, b) => (b.elo - a.elo) || (b.wins - a.wins) || (b.games - a.games))
+        .slice(0, 10);
+      if (!top.length) {
+        leaderboardList.innerHTML = '<p class="profile-help">No entries yet. Play online or ranked games.</p>';
+        return;
+      }
+      leaderboardList.innerHTML = top.map((entry, i) => `
+        <div class="leaderboard-item">
+          <span>#${i + 1} ${entry.username}</span>
+          <span>ELO ${entry.elo} | W ${entry.wins} / G ${entry.games}</span>
+        </div>
+      `).join('');
+    }
+
+    function saveLeaderboard() {
+      try {
+        localStorage.setItem(LEADERBOARD_STORAGE_KEY, JSON.stringify(leaderboard));
+      } catch (err) {}
+      renderLeaderboard();
+    }
+
+    function loadLeaderboard() {
+      try {
+        const raw = localStorage.getItem(LEADERBOARD_STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : null;
+        if (Array.isArray(parsed)) {
+          leaderboard = parsed
+            .filter((entry) => entry && typeof entry.username === 'string')
+            .map((entry) => ({
+              username: sanitizeUsername(entry.username),
+              elo: Number.isFinite(Number(entry.elo)) ? Math.max(MIN_RANKED_ELO, Math.min(MAX_RANKED_ELO, Math.floor(Number(entry.elo)))) : DEFAULT_RANKED_ELO,
+              wins: Number.isFinite(Number(entry.wins)) ? Math.max(0, Math.floor(Number(entry.wins))) : 0,
+              games: Number.isFinite(Number(entry.games)) ? Math.max(0, Math.floor(Number(entry.games))) : 0,
+              losses: Number.isFinite(Number(entry.losses)) ? Math.max(0, Math.floor(Number(entry.losses))) : 0,
+              draws: Number.isFinite(Number(entry.draws)) ? Math.max(0, Math.floor(Number(entry.draws))) : 0,
+              seenAt: Number.isFinite(Number(entry.seenAt)) ? Number(entry.seenAt) : Date.now()
+            }));
+        } else {
+          leaderboard = [];
+        }
+      } catch (err) {
+        leaderboard = [];
+      }
+      renderLeaderboard();
+    }
+
+    function upsertLeaderboardEntry(username, patch = {}) {
+      const cleanName = sanitizeUsername(username || 'Player');
+      const existing = leaderboard.find((entry) => entry.username === cleanName);
+      if (existing) {
+        existing.elo = Number.isFinite(Number(patch.elo)) ? Math.max(MIN_RANKED_ELO, Math.min(MAX_RANKED_ELO, Math.floor(Number(patch.elo)))) : existing.elo;
+        existing.wins = Number.isFinite(Number(patch.wins)) ? Math.max(0, Math.floor(Number(patch.wins))) : existing.wins;
+        existing.games = Number.isFinite(Number(patch.games)) ? Math.max(0, Math.floor(Number(patch.games))) : existing.games;
+        existing.losses = Number.isFinite(Number(patch.losses)) ? Math.max(0, Math.floor(Number(patch.losses))) : existing.losses;
+        existing.draws = Number.isFinite(Number(patch.draws)) ? Math.max(0, Math.floor(Number(patch.draws))) : existing.draws;
+        existing.seenAt = Date.now();
+      } else {
+        leaderboard.push({
+          username: cleanName,
+          elo: Number.isFinite(Number(patch.elo)) ? Math.max(MIN_RANKED_ELO, Math.min(MAX_RANKED_ELO, Math.floor(Number(patch.elo)))) : DEFAULT_RANKED_ELO,
+          wins: Number.isFinite(Number(patch.wins)) ? Math.max(0, Math.floor(Number(patch.wins))) : 0,
+          games: Number.isFinite(Number(patch.games)) ? Math.max(0, Math.floor(Number(patch.games))) : 0,
+          losses: Number.isFinite(Number(patch.losses)) ? Math.max(0, Math.floor(Number(patch.losses))) : 0,
+          draws: Number.isFinite(Number(patch.draws)) ? Math.max(0, Math.floor(Number(patch.draws))) : 0,
+          seenAt: Date.now()
+        });
+      }
+      saveLeaderboard();
+    }
+
+    function showChatFeed(message) {
+      chatFeedText.textContent = message || '';
+    }
+
+    function stopOnlineTurnTimer() {
+      if (onlineTurnTimer) {
+        clearInterval(onlineTurnTimer);
+        onlineTurnTimer = null;
+      }
+      onlineTurnPlayer = null;
+      turnTimerText.textContent = '';
+    }
+
+    function resetTimeoutCounts(sendToPeer = true) {
+      timeoutCounts = { X: 0, O: 0 };
+      if (sendToPeer && mode === 'online') {
+        sendOnlineMessage({ type: 'timeouts', timeouts: timeoutCounts });
+      }
+    }
+
+    function forfeitOnlinePlayer(loserMark) {
+      if (gameOver || mode !== 'online') {
+        return;
+      }
+      stopOnlineTurnTimer();
+      const winnerMark = loserMark === 'X' ? 'O' : 'X';
+      gameOver = true;
+      gameStarted = false;
+      setBoardDisabled(true);
+      if (gameVariant === 'ranked') {
+        if (winnerMark === 'X') {
+          rankedScore.x = rankedTargetWins;
+          rankedScore.o = 0;
+        } else {
+          rankedScore.o = rankedTargetWins;
+          rankedScore.x = 0;
+        }
+        updateRankedScoreUi();
+        const iWonMatch = winnerMark === myMark;
+        applyRankedEloResult(iWonMatch ? 1 : 0);
+        updateStatus(iWonMatch ? 'Opponent forfeited from timeouts. Ranked win.' : 'You forfeited from timeouts.');
+      } else {
+        const iWon = winnerMark === myMark;
+        recordMatchResult(winnerMark, iWon);
+        updateStatus(iWon ? 'Opponent forfeited from timeouts. You win!' : 'You forfeited from timeouts.');
+      }
+      sendOnlineMessage({ type: 'forfeit', loser: loserMark, ranked: gameVariant === 'ranked', score: rankedScore });
+    }
+
+    function startOnlineTurnTimer() {
+      if (mode !== 'online' || !onlineConnected || !onlineStarterAssigned || gameOver || !gameStarted) {
+        stopOnlineTurnTimer();
+        return;
+      }
+      if (!isHost) {
+        return;
+      }
+      if (onlineTurnPlayer === player && onlineTurnTimer) {
+        return;
+      }
+      stopOnlineTurnTimer();
+      onlineTurnPlayer = player;
+      onlineTurnTimeLeft = ONLINE_TURN_SECONDS;
+      turnTimerText.textContent = `Turn timer: ${onlineTurnTimeLeft}s`;
+      sendOnlineMessage({ type: 'turn-timer', left: onlineTurnTimeLeft, player, timeouts: timeoutCounts });
+      onlineTurnTimer = setInterval(() => {
+        if (mode !== 'online' || !onlineConnected || gameOver || !onlineStarterAssigned) {
+          stopOnlineTurnTimer();
+          return;
+        }
+        onlineTurnTimeLeft -= 1;
+        turnTimerText.textContent = `Turn timer: ${Math.max(0, onlineTurnTimeLeft)}s`;
+        sendOnlineMessage({ type: 'turn-timer', left: Math.max(0, onlineTurnTimeLeft), player, timeouts: timeoutCounts });
+        if (onlineTurnTimeLeft > 0) {
+          return;
+        }
+        stopOnlineTurnTimer();
+        const offender = player;
+        timeoutCounts[offender] += 1;
+        sendOnlineMessage({ type: 'timeouts', timeouts: timeoutCounts });
+        if (timeoutCounts[offender] >= ONLINE_TIMEOUT_FORFEIT_LIMIT) {
+          forfeitOnlinePlayer(offender);
+          return;
+        }
+        player = offender === 'X' ? 'O' : 'X';
+        updateStatus(`${offender === myMark ? 'You' : 'Opponent'} timed out. Turn passed.`);
+        sendOnlineMessage({ type: 'turn-pass', player, reason: 'timeout' });
+        updateTurnStatus();
+        setBoardDisabled(!isHumanTurn());
+      }, 1000);
+    }
+
+    function sendQuickChat(chatId) {
+      const map = {
+        gg: 'GG',
+        nice: 'Nice move',
+        rematch: 'Rematch?',
+        glhf: 'GLHF'
+      };
+      const text = map[chatId];
+      if (!text || mode !== 'online' || !onlineConnected) {
+        return;
+      }
+      showChatFeed(`You: ${text}`);
+      sendOnlineMessage({ type: 'chat', text });
     }
 
     function recordMatchResult(result, won) {
@@ -1417,6 +1680,7 @@
         profile.losses += 1;
       }
       saveProfile();
+      upsertLeaderboardEntry(profile.username, { games: profile.games, wins: profile.wins, losses: profile.losses, draws: profile.draws, elo: rankedElo });
     }
 
     function setActiveScreen(screen) {
@@ -1424,6 +1688,7 @@
       boardScreen.classList.toggle('hidden', screen !== 'board');
       shopScreen.classList.toggle('hidden', screen !== 'shop');
       statsScreen.classList.toggle('hidden', screen !== 'stats');
+      leaderboardScreen.classList.toggle('hidden', screen !== 'leaderboard');
     }
 
     function isBoardScreenActive() {
@@ -1470,12 +1735,18 @@
       updateAdminUi();
     }
 
+    function openLeaderboardScreen() {
+      setActiveScreen('leaderboard');
+      renderLeaderboard();
+    }
+
     function openMenuScreen() {
       setActiveScreen('menu');
       clearPendingAiMove();
       if (mode === 'online') {
         disconnectOnline();
       }
+      stopOnlineTurnTimer();
       gameStarted = false;
       setBoardDisabled(true);
     }
@@ -1831,6 +2102,7 @@
       const k = 28;
       rankedElo = Math.max(MIN_RANKED_ELO, Math.min(MAX_RANKED_ELO, Math.round(rankedElo + k * (actualScore - expected))));
       saveRankedElo();
+      upsertLeaderboardEntry(profile.username, { elo: rankedElo, wins: profile.wins, games: profile.games, losses: profile.losses, draws: profile.draws });
       sendOnlineMessage({ type: 'ranked-elo-update', elo: rankedElo });
     }
 
@@ -2056,21 +2328,28 @@
 
     function updateTurnStatus() {
       if (mode === 'online') {
+        chatWheel.classList.toggle('hidden', !(onlineConnected && gameStarted));
         if (!onlineConnected) {
           updateStatus('Create or join a room to start online 1v1.');
+          turnTimerText.textContent = '';
           return;
         }
         if (!onlineStarterAssigned) {
           updateStatus(isHost ? 'Choosing random starter...' : 'Waiting for host to choose starter...');
+          turnTimerText.textContent = '';
           return;
         }
         if (gameOver) {
+          turnTimerText.textContent = '';
           return;
         }
         updateStatus(isHumanTurn() ? `Your turn (${myMark})` : `Opponent's turn (${player})`);
+        startOnlineTurnTimer();
         return;
       }
 
+      chatWheel.classList.add('hidden');
+      turnTimerText.textContent = '';
       if (gameOver) {
         return;
       }
@@ -2148,6 +2427,9 @@
     function endGame(result) {
       gameOver = true;
       setBoardDisabled(true);
+      if (mode === 'online') {
+        stopOnlineTurnTimer();
+      }
 
       if (gameVariant === 'ranked') {
         if (result === 'draw') {
@@ -2318,6 +2600,7 @@
       clearBoardWinEffects();
       shouldMeteorShatter = false;
       clearPendingAiMove();
+      stopOnlineTurnTimer();
       board = Array(boardSize * boardSize).fill('');
       player = 'X';
       gameOver = false;
@@ -2339,6 +2622,7 @@
     }
 
     function disconnectOnline() {
+      stopOnlineTurnTimer();
       if (conn) {
         try {
           conn.close();
@@ -2357,8 +2641,10 @@
       isHost = false;
       opponentName = 'Opponent';
       opponentRankedElo = DEFAULT_RANKED_ELO;
+      timeoutCounts = { X: 0, O: 0 };
       updateRankedScoreUi();
       updateQueueButtonUi();
+      showChatFeed('');
       updateConnection('');
     }
 
@@ -2456,12 +2742,16 @@
         onlineConnected = true;
         gameStarted = true;
         onlineStarterAssigned = false;
+        resetTimeoutCounts(false);
         resetBoard();
+        showChatFeed('');
         sendOnlineMessage({
           type: 'hello',
           username: profile.username,
           rankedElo,
-          ranked: gameVariant === 'ranked'
+          ranked: gameVariant === 'ranked',
+          wins: profile.wins,
+          games: profile.games
         });
         updateConnection(`Connected. You are ${myMark}.`);
         if (gameVariant === 'ranked') {
@@ -2492,6 +2782,11 @@
           } else {
             opponentRankedElo = DEFAULT_RANKED_ELO;
           }
+          upsertLeaderboardEntry(opponentName, {
+            elo: opponentRankedElo,
+            wins: Number.isFinite(Number(msg.wins)) ? Math.max(0, Math.floor(Number(msg.wins))) : 0,
+            games: Number.isFinite(Number(msg.games)) ? Math.max(0, Math.floor(Number(msg.games))) : 0
+          });
           updateRankedScoreUi();
           if (gameVariant === 'ranked') {
             const oppTier = getRankTierByElo(opponentRankedElo);
@@ -2499,6 +2794,7 @@
           }
         } else if (msg.type === 'reset') {
           onlineStarterAssigned = false;
+          resetTimeoutCounts(false);
           resetBoard();
           if (isHost) {
             assignRandomOnlineStarter(true);
@@ -2511,8 +2807,48 @@
           onlineStarterAssigned = true;
           updateTurnStatus();
           setBoardDisabled(!isHumanTurn());
+        } else if (msg.type === 'turn-timer' && Number.isFinite(Number(msg.left)) && (msg.player === 'X' || msg.player === 'O')) {
+          onlineTurnTimeLeft = Math.max(0, Math.floor(Number(msg.left)));
+          onlineTurnPlayer = msg.player;
+          turnTimerText.textContent = `Turn timer: ${onlineTurnTimeLeft}s`;
+          if (msg.timeouts && typeof msg.timeouts === 'object') {
+            timeoutCounts = {
+              X: Math.max(0, Math.floor(Number(msg.timeouts.X) || 0)),
+              O: Math.max(0, Math.floor(Number(msg.timeouts.O) || 0))
+            };
+          }
+        } else if (msg.type === 'turn-pass' && (msg.player === 'X' || msg.player === 'O')) {
+          player = msg.player;
+          updateStatus('Opponent timed out. Your turn.');
+          updateTurnStatus();
+          setBoardDisabled(!isHumanTurn());
+        } else if (msg.type === 'timeouts' && msg.timeouts && typeof msg.timeouts === 'object') {
+          timeoutCounts = {
+            X: Math.max(0, Math.floor(Number(msg.timeouts.X) || 0)),
+            O: Math.max(0, Math.floor(Number(msg.timeouts.O) || 0))
+          };
+        } else if (msg.type === 'forfeit' && (msg.loser === 'X' || msg.loser === 'O')) {
+          stopOnlineTurnTimer();
+          gameOver = true;
+          gameStarted = false;
+          setBoardDisabled(true);
+          const iWon = msg.loser !== myMark;
+          if (msg.ranked) {
+            if (msg.score && typeof msg.score === 'object') {
+              rankedScore = {
+                x: Math.max(0, Math.floor(Number(msg.score.x) || 0)),
+                o: Math.max(0, Math.floor(Number(msg.score.o) || 0))
+              };
+            }
+            applyRankedEloResult(iWon ? 1 : 0);
+            updateRankedScoreUi();
+          }
+          updateStatus(iWon ? 'Opponent forfeited from timeouts. You win!' : 'You forfeited from timeouts.');
+        } else if (msg.type === 'chat' && typeof msg.text === 'string' && msg.text.trim()) {
+          showChatFeed(`${opponentName}: ${msg.text.trim().slice(0, 40)}`);
         } else if (msg.type === 'ranked-elo-update' && Number.isFinite(Number(msg.elo))) {
           opponentRankedElo = Math.max(MIN_RANKED_ELO, Math.min(MAX_RANKED_ELO, Math.floor(Number(msg.elo))));
+          upsertLeaderboardEntry(opponentName, { elo: opponentRankedElo });
           updateRankedScoreUi();
         }
       });
@@ -2520,6 +2856,8 @@
       conn.on('close', () => {
         onlineConnected = false;
         gameStarted = false;
+        stopOnlineTurnTimer();
+        chatWheel.classList.add('hidden');
         setBoardDisabled(true);
         updateConnection(gameVariant === 'ranked' ? 'Disconnected. Tap Queue Ranked to find a new match.' : 'Disconnected. Host or join again.');
         updateStatus(gameVariant === 'ranked' ? 'Ranked session ended.' : 'Online session ended.');
@@ -2645,6 +2983,7 @@
 
       if (mode === 'online') {
         onlineStarterAssigned = false;
+        resetTimeoutCounts(true);
         sendOnlineMessage({ type: 'reset' });
         if (isHost) {
           assignRandomOnlineStarter(true);
@@ -2679,6 +3018,9 @@
       difficultySelect.disabled = activeOnline || ranked;
       startBtn.disabled = activeOnline;
       updateQueueButtonUi();
+      chatWheel.classList.toggle('hidden', true);
+      turnTimerText.textContent = '';
+      showChatFeed('');
 
       if (activeOnline) {
         onlineStarterAssigned = false;
@@ -2794,8 +3136,10 @@
     rankedMenuBtn.addEventListener('click', openRankedScreen);
     shopMenuBtn.addEventListener('click', openShopScreen);
     statsMenuBtn.addEventListener('click', openStatsScreen);
+    leaderboardMenuBtn.addEventListener('click', openLeaderboardScreen);
     shopBackBtn.addEventListener('click', openMenuScreen);
     statsBackBtn.addEventListener('click', openMenuScreen);
+    leaderboardBackBtn.addEventListener('click', openMenuScreen);
     menuBtn.addEventListener('click', openMenuScreen);
     shopItems.addEventListener('click', handleShopClick);
     statsTitle.addEventListener('click', handleStatsTitleTap);
@@ -2804,6 +3148,13 @@
     adminAddLosunBtn.addEventListener('click', adminAddLosun);
     adminResetStatsBtn.addEventListener('click', adminResetStats);
     adminResetAllBtn.addEventListener('click', adminResetAllProgress);
+    chatWheel.addEventListener('click', (event) => {
+      const btn = event.target.closest('.chat-btn');
+      if (!btn) {
+        return;
+      }
+      sendQuickChat(btn.dataset.chat || '');
+    });
     usernameInput.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') {
         event.preventDefault();
@@ -2830,7 +3181,9 @@
     loadProfile();
     loadLosun();
     loadRankedElo();
+    loadLeaderboard();
     loadShopState();
+    upsertLeaderboardEntry(profile.username, { elo: rankedElo, wins: profile.wins, games: profile.games, losses: profile.losses, draws: profile.draws });
     updateAdminUi();
     window.spendLosun = spendLosun;
     setActiveScreen('menu');
