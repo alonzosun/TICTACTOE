@@ -2471,19 +2471,20 @@
       playTone(72, 0.18, 'triangle', 0.08, 0.14);
     }
 
-    function playFrostNovaBlast() {
-      playTone(720, 0.2, 'sine', 0.05, 0);
-      playTone(440, 0.42, 'triangle', 0.08, 0.08);
-      playTone(260, 0.62, 'sine', 0.07, 0.15);
-      playTone(160, 0.82, 'triangle', 0.05, 0.3);
+    function playFrostFreezeSound() {
+      playTone(1260, 0.12, 'triangle', 0.11, 0);
+      playTone(980, 0.34, 'sine', 0.09, 0.05);
+      playTone(720, 0.74, 'triangle', 0.08, 0.12);
+      playTone(420, 1.05, 'sine', 0.07, 0.22);
     }
 
     function playFrostShatterSound() {
-      playTone(980, 0.08, 'square', 0.08, 0);
-      playTone(760, 0.1, 'square', 0.07, 0.03);
-      playTone(520, 0.14, 'triangle', 0.08, 0.08);
-      playTone(220, 0.3, 'sawtooth', 0.09, 0.12);
-      playTone(120, 0.42, 'sawtooth', 0.06, 0.18);
+      playTone(1320, 0.07, 'square', 0.15, 0);
+      playTone(1020, 0.08, 'square', 0.14, 0.02);
+      playTone(840, 0.09, 'square', 0.12, 0.05);
+      playTone(620, 0.13, 'triangle', 0.1, 0.08);
+      playTone(260, 0.36, 'sawtooth', 0.12, 0.1);
+      playTone(140, 0.5, 'sawtooth', 0.09, 0.17);
     }
 
     function spawnClassicGlints(count) {
@@ -2614,7 +2615,7 @@
           playFrostShatterSound();
         }, 2550);
         setTimeout(() => {
-          playFrostNovaBlast();
+          playFrostFreezeSound();
         }, 260);
       } else {
         return;
