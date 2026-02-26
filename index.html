@@ -354,6 +354,11 @@
       text-shadow: 0 0 16px rgba(146, 220, 255, 0.92);
     }
 
+    .score-effect.score-blackhole {
+      color: #191925;
+      text-shadow: 0 0 14px rgba(123, 123, 178, 0.72);
+    }
+
     .board {
       display: grid;
       grid-template-columns: repeat(var(--board-size, 3), 1fr);
@@ -556,6 +561,16 @@
         inset 0 -2px 0 rgba(61, 96, 122, 0.34),
         0 10px 22px rgba(36, 81, 116, 0.34);
       animation: effect-frostnova 3200ms cubic-bezier(0.2, 0.74, 0.2, 1.08);
+    }
+
+    .board.effect-blackhole {
+      box-shadow:
+        0 0 0 2px rgba(78, 72, 112, 0.46),
+        0 0 56px rgba(44, 30, 79, 0.7),
+        inset 0 2px 0 rgba(188, 176, 255, 0.18),
+        inset 0 -2px 0 rgba(22, 16, 45, 0.5),
+        0 10px 24px rgba(34, 22, 58, 0.48);
+      animation: effect-blackhole 2800ms ease-out;
     }
 
     .win-particle {
@@ -842,6 +857,54 @@
         repeating-linear-gradient(132deg, rgba(219, 248, 255, 0.12) 0 2px, rgba(156, 211, 240, 0.08) 2px 6px),
         linear-gradient(180deg, rgba(219, 247, 255, 0.2), rgba(146, 199, 229, 0.34));
       animation: frost-sheet-spread 2450ms ease-out forwards;
+    }
+
+    .blackhole-core {
+      position: absolute;
+      left: 50%;
+      top: 54%;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      transform: translate(-50%, -50%) scale(0.2);
+      pointer-events: none;
+      z-index: 12;
+      opacity: 0;
+      background:
+        radial-gradient(circle at 50% 50%, #000 0 34%, rgba(27, 20, 48, 0.96) 60%, rgba(100, 77, 174, 0.6) 82%, rgba(171, 139, 255, 0.3) 95%);
+      box-shadow:
+        0 0 42px rgba(107, 77, 206, 0.52),
+        0 0 84px rgba(55, 38, 102, 0.6);
+      animation: blackhole-grow 900ms ease-out forwards;
+    }
+
+    .blackhole-core::before {
+      content: "";
+      position: absolute;
+      inset: -18px;
+      border-radius: 50%;
+      background: conic-gradient(from 20deg, rgba(180, 146, 255, 0.42), rgba(68, 49, 128, 0.15), rgba(190, 154, 255, 0.42), rgba(64, 46, 122, 0.15), rgba(180, 146, 255, 0.42));
+      filter: blur(1px);
+      animation: blackhole-spin 950ms linear infinite;
+    }
+
+    .blackhole-vignette {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 11;
+      opacity: 0;
+      background:
+        radial-gradient(circle at 50% 54%, transparent 12%, rgba(0, 0, 0, 0.48) 75%),
+        radial-gradient(circle at 50% 54%, rgba(146, 112, 255, 0.18), transparent 30%);
+      animation: blackhole-vignette 2400ms ease-out forwards;
+    }
+
+    .cell.blackhole-suck {
+      animation: blackhole-suck 1650ms cubic-bezier(0.16, 0.82, 0.2, 1) forwards;
+      animation-delay: var(--delay, 0ms);
+      pointer-events: none;
+      z-index: 14;
     }
 
     .fall {
@@ -1135,6 +1198,52 @@
       100% {
         opacity: 0.96;
         transform: scale(1.02);
+      }
+    }
+
+    @keyframes effect-blackhole {
+      0% { transform: scale(1); filter: saturate(1); }
+      32% { transform: scale(1.01); filter: saturate(0.9); }
+      100% { transform: scale(1); filter: saturate(1); }
+    }
+
+    @keyframes blackhole-grow {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.18);
+      }
+      45% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(3.9);
+      }
+    }
+
+    @keyframes blackhole-spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes blackhole-vignette {
+      0% { opacity: 0; }
+      30% { opacity: 0.58; }
+      80% { opacity: 0.68; }
+      100% { opacity: 0; }
+    }
+
+    @keyframes blackhole-suck {
+      0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(1) rotate(0deg);
+      }
+      60% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+        transform: translate(var(--to-x, 0px), var(--to-y, 0px)) scale(0.06) rotate(780deg);
       }
     }
 
@@ -1442,6 +1551,7 @@
       </div>
       <div id="adminActions" class="admin-actions hidden">
         <button id="adminAddLosunBtn" class="start">+1000 Losun</button>
+        <button id="adminEquipBlackHoleBtn" class="start">Equip Black Hole</button>
         <button id="adminResetStatsBtn" class="reset">Reset Stats</button>
         <button id="adminResetAllBtn" class="reset">Reset Stats + Losun</button>
       </div>
@@ -1558,6 +1668,7 @@
     const adminUnlockBtn = document.getElementById('adminUnlockBtn');
     const adminActions = document.getElementById('adminActions');
     const adminAddLosunBtn = document.getElementById('adminAddLosunBtn');
+    const adminEquipBlackHoleBtn = document.getElementById('adminEquipBlackHoleBtn');
     const adminResetStatsBtn = document.getElementById('adminResetStatsBtn');
     const adminResetAllBtn = document.getElementById('adminResetAllBtn');
 
@@ -1732,7 +1843,7 @@
     }
 
     function clearScoreEffect() {
-      scoreEffectText.classList.remove('active', 'score-classic', 'score-ember', 'score-aurora', 'score-meteor', 'score-frostnova');
+      scoreEffectText.classList.remove('active', 'score-classic', 'score-ember', 'score-aurora', 'score-meteor', 'score-frostnova', 'score-blackhole');
       scoreEffectText.textContent = '';
       if (scoreEffectTimer) {
         clearTimeout(scoreEffectTimer);
@@ -1800,6 +1911,16 @@
       }
       addLosun(1000);
       updateConnection('Owner command: +1000 Losun.');
+    }
+
+    function adminEquipBlackHole() {
+      if (!adminUnlocked) {
+        return;
+      }
+      shopState.owned.blackhole = true;
+      shopState.equipped = 'blackhole';
+      saveShopState();
+      updateConnection('Owner command: Black Hole equipped.');
     }
 
     function adminResetStats() {
@@ -2360,8 +2481,14 @@
     }
 
     function clearBoardWinEffects() {
-      boardElement.classList.remove('effect-classic', 'effect-ember', 'effect-aurora', 'effect-meteor', 'effect-frostnova', 'cracked', 'frost-cracked');
-      boardElement.querySelectorAll('.win-particle, .win-glint, .ember-spark, .smoke-puff, .aurora-ribbon, .aurora-star, .meteor, .meteor-impact, .mega-meteor, .impact-flash, .impact-wave, .frost-ring, .frost-shard, .frost-mist, .snowflake, .frost-glow, .frost-sheet').forEach((node) => node.remove());
+      boardElement.classList.remove('effect-classic', 'effect-ember', 'effect-aurora', 'effect-meteor', 'effect-frostnova', 'effect-blackhole', 'cracked', 'frost-cracked');
+      boardElement.querySelectorAll('.win-particle, .win-glint, .ember-spark, .smoke-puff, .aurora-ribbon, .aurora-star, .meteor, .meteor-impact, .mega-meteor, .impact-flash, .impact-wave, .frost-ring, .frost-shard, .frost-mist, .snowflake, .frost-glow, .frost-sheet, .blackhole-core, .blackhole-vignette').forEach((node) => node.remove());
+      cells.forEach((cell) => {
+        cell.classList.remove('blackhole-suck');
+        cell.style.removeProperty('--to-x');
+        cell.style.removeProperty('--to-y');
+        cell.style.removeProperty('--delay');
+      });
       if (winEffectTimer) {
         clearTimeout(winEffectTimer);
         winEffectTimer = null;
@@ -2555,8 +2682,39 @@
       boardElement.appendChild(sheet);
     }
 
+    function spawnBlackHoleCore() {
+      const hole = document.createElement('span');
+      hole.className = 'blackhole-core';
+      boardElement.appendChild(hole);
+
+      const vignette = document.createElement('span');
+      vignette.className = 'blackhole-vignette';
+      boardElement.appendChild(vignette);
+    }
+
+    function suckTilesIntoBlackHole() {
+      const boardRect = boardElement.getBoundingClientRect();
+      const targetX = boardRect.left + boardRect.width * 0.5;
+      const targetY = boardRect.top + boardRect.height * 0.54;
+      const tiles = [...cells];
+      tiles.forEach((cell, i) => {
+        const rect = cell.getBoundingClientRect();
+        const centerX = rect.left + rect.width * 0.5;
+        const centerY = rect.top + rect.height * 0.5;
+        const toX = targetX - centerX;
+        const toY = targetY - centerY;
+        cell.style.setProperty('--to-x', `${toX}px`);
+        cell.style.setProperty('--to-y', `${toY}px`);
+        cell.style.setProperty('--delay', `${i * 32}ms`);
+        cell.classList.add('blackhole-suck');
+      });
+    }
+
     function getWinEffectRestartDelay() {
       const equipped = shopState.equipped || 'classic';
+      if (equipped === 'blackhole') {
+        return 2650;
+      }
       if (equipped === 'frostnova') {
         return 3150;
       }
@@ -2617,13 +2775,19 @@
         setTimeout(() => {
           playFrostFreezeSound();
         }, 260);
+      } else if (equipped === 'blackhole') {
+        boardElement.classList.add('effect-blackhole');
+        spawnBlackHoleCore();
+        setTimeout(() => {
+          suckTilesIntoBlackHole();
+        }, 620);
       } else {
         return;
       }
 
       winEffectTimer = setTimeout(() => {
         clearBoardWinEffects();
-      }, equipped === 'frostnova' ? 3600 : 1250);
+      }, equipped === 'frostnova' ? 3600 : (equipped === 'blackhole' ? 3000 : 1250));
     }
 
     function generateRoomCode() {
@@ -3047,6 +3211,7 @@
         if (youWonRound) {
           const meteorWin = canTriggerMeteorNow();
           const frostWin = (shopState.equipped || 'classic') === 'frostnova';
+          const blackHoleWin = (shopState.equipped || 'classic') === 'blackhole';
           if (result === 'X') {
             rankedScore.x += 1;
           } else {
@@ -3054,7 +3219,7 @@
           }
           triggerWinScoreEffect();
           triggerEquippedWinAnimation();
-          shouldMeteorShatter = meteorWin || frostWin;
+          shouldMeteorShatter = meteorWin || frostWin || blackHoleWin;
           playWinCheer();
         } else {
           if (result === 'X') {
@@ -3100,9 +3265,10 @@
       if (won) {
         const meteorWin = canTriggerMeteorNow();
         const frostWin = (shopState.equipped || 'classic') === 'frostnova';
+        const blackHoleWin = (shopState.equipped || 'classic') === 'blackhole';
         triggerWinScoreEffect();
         triggerEquippedWinAnimation();
-        shouldMeteorShatter = meteorWin || frostWin;
+        shouldMeteorShatter = meteorWin || frostWin || blackHoleWin;
         if (mode === 'online') {
           addLosun(10);
           updateStatus('You win! +10 Losun');
@@ -3756,6 +3922,7 @@
     saveProfileBtn.addEventListener('click', saveUsernameFromInput);
     adminUnlockBtn.addEventListener('click', unlockAdmin);
     adminAddLosunBtn.addEventListener('click', adminAddLosun);
+    adminEquipBlackHoleBtn.addEventListener('click', adminEquipBlackHole);
     adminResetStatsBtn.addEventListener('click', adminResetStats);
     adminResetAllBtn.addEventListener('click', adminResetAllProgress);
     chatWheel.addEventListener('click', (event) => {
