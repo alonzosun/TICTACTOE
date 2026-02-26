@@ -6,7 +6,7 @@
   <title>Alons Tic Tac</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bungee:wght@400&family=Quicksand:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #e6dcc8;
@@ -25,6 +25,7 @@
       --radius-sm: 10px;
       --soft-shadow: 0 12px 30px rgba(58, 34, 20, 0.16);
       --hard-shadow: 0 6px 14px rgba(58, 34, 20, 0.2);
+      --mark-font: "Bungee", "Quicksand", sans-serif;
     }
 
     * {
@@ -404,7 +405,7 @@
       border-radius: 10px;
       width: 100%;
       aspect-ratio: 1 / 1;
-      font-size: clamp(2.5rem, 8vw, 3.7rem);
+      font-size: clamp(2.45rem, 7.8vw, 3.55rem);
       font-weight: 800;
       cursor: pointer;
       color: var(--text);
@@ -437,10 +438,28 @@
 
     .cell.x {
       color: var(--x);
+      font-family: var(--mark-font);
+      letter-spacing: 0.02em;
+      text-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.55),
+        0 5px 9px rgba(13, 91, 118, 0.24);
     }
 
     .cell.o {
       color: var(--o);
+      font-family: var(--mark-font);
+      letter-spacing: 0.01em;
+      text-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.52),
+        0 5px 9px rgba(183, 73, 18, 0.24);
+    }
+
+    .cell.mark-pop-x {
+      animation: mark-pop-x 280ms cubic-bezier(0.2, 0.9, 0.25, 1.25);
+    }
+
+    .cell.mark-pop-o {
+      animation: mark-pop-o 320ms cubic-bezier(0.2, 0.85, 0.25, 1.18);
     }
 
     .winner {
@@ -888,6 +907,34 @@
       100% {
         opacity: 0;
         transform: translateY(-14px) scale(0.95);
+      }
+    }
+
+    @keyframes mark-pop-x {
+      0% {
+        transform: scale(0.58) rotate(-8deg);
+        filter: brightness(1.25);
+      }
+      60% {
+        transform: scale(1.12) rotate(2deg);
+      }
+      100% {
+        transform: scale(1) rotate(0deg);
+        filter: brightness(1);
+      }
+    }
+
+    @keyframes mark-pop-o {
+      0% {
+        transform: scale(0.52) rotate(-20deg);
+        filter: brightness(1.25);
+      }
+      70% {
+        transform: scale(1.1) rotate(4deg);
+      }
+      100% {
+        transform: scale(1) rotate(0deg);
+        filter: brightness(1);
       }
     }
 
@@ -2589,7 +2636,12 @@
       const cell = cells[index];
       cell.textContent = mark;
       cell.classList.add(mark.toLowerCase());
+      cell.classList.remove('mark-pop-x', 'mark-pop-o');
+      cell.classList.add(mark === 'X' ? 'mark-pop-x' : 'mark-pop-o');
       cell.disabled = true;
+      setTimeout(() => {
+        cell.classList.remove('mark-pop-x', 'mark-pop-o');
+      }, 360);
 
       const result = checkWinner();
       if (result) {
