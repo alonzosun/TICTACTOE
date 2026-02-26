@@ -1787,6 +1787,7 @@
     let winEffectTimer = null;
     let scoreEffectTimer = null;
     let shouldMeteorShatter = false;
+    let remoteLoseRestartTimer = null;
     let offerStartAt = Date.now();
     let onlineTurnTimer = null;
     let onlineTurnPlayer = null;
@@ -2134,6 +2135,13 @@
 
     function showChatFeed(message) {
       chatFeedText.textContent = message || '';
+    }
+
+    function clearRemoteLoseRestartTimer() {
+      if (remoteLoseRestartTimer) {
+        clearTimeout(remoteLoseRestartTimer);
+        remoteLoseRestartTimer = null;
+      }
     }
 
     function stopOnlineTurnTimer() {
@@ -2770,8 +2778,8 @@
       });
     }
 
-    function getWinEffectRestartDelay() {
-      const equipped = shopState.equipped || 'classic';
+    function getWinEffectRestartDelayForEffect(effectId) {
+      const equipped = effectId || 'classic';
       if (equipped === 'blackhole') {
         return 5200;
       }
@@ -2784,9 +2792,14 @@
       return 0;
     }
 
-    function triggerEquippedWinAnimation() {
+    function getWinEffectRestartDelay() {
+      return getWinEffectRestartDelayForEffect(shopState.equipped || 'classic');
+    }
+
+    function triggerEquippedWinAnimation(effectId = null, shouldConsume = true) {
       clearBoardWinEffects();
-      const equipped = shopState.equipped || 'classic';
+      const equipped = effectId || shopState.equipped || 'classic';
+      let usedEffect = equipped;
 
       if (equipped === 'classic') {
         boardElement.classList.add('effect-classic');
@@ -2803,10 +2816,9 @@
         spawnAuroraStars(20);
         spawnWinParticles(['#89f5ff', '#9ea8ff', '#5ff0bf'], 14);
       } else if (equipped === 'meteor') {
-        if (!consumeMeteorCharge()) {
+        if (shouldConsume && !consumeMeteorCharge()) {
           updateConnection('Meteor Shower is out of uses (0/20). Switched to Classic Cheer.');
-          triggerEquippedWinAnimation();
-          return;
+          return triggerEquippedWinAnimation('classic', false);
         }
         boardElement.classList.add('effect-meteor');
         spawnMegaMeteor();
@@ -2845,12 +2857,13 @@
           suckTilesIntoBlackHole();
         }, 2050);
       } else {
-        return;
+        return 'classic';
       }
 
       winEffectTimer = setTimeout(() => {
         clearBoardWinEffects();
       }, equipped === 'frostnova' ? 3600 : (equipped === 'blackhole' ? 5200 : 1250));
+      return usedEffect;
     }
 
     function generateRoomCode() {
@@ -3265,6 +3278,35 @@
       }, Math.max(0, delayMs));
     }
 
+    function scheduleOnlineLossRestartFallback(useNoFall, delayMs = 0) {
+      clearRemoteLoseRestartTimer();
+      remoteLoseRestartTimer = setTimeout(() => {
+        remoteLoseRestartTimer = null;
+        if (useNoFall) {
+          restartRoundWithoutFall(delayMs);
+        } else if (delayMs > 0) {
+          setTimeout(() => {
+            animatePiecesFallAndRestart();
+          }, delayMs);
+        } else {
+          animatePiecesFallAndRestart();
+        }
+      }, 260);
+    }
+
+    function broadcastOnlineWinEffect(effectId, hasFollowupRound) {
+      if (mode !== 'online') {
+        return;
+      }
+      sendOnlineMessage({
+        type: 'win-effect',
+        effect: effectId,
+        followupRound: Boolean(hasFollowupRound),
+        restartDelay: getWinEffectRestartDelayForEffect(effectId),
+        noFall: effectId === 'blackhole'
+      });
+    }
+
     function endGame(result) {
       gameOver = true;
       setBoardDisabled(true);
@@ -3291,6 +3333,7 @@
 
         const youWonRound = result === myMark;
         let blackHoleWin = false;
+        let usedEffect = 'classic';
         if (youWonRound) {
           const meteorWin = canTriggerMeteorNow();
           const frostWin = (shopState.equipped || 'classic') === 'frostnova';
@@ -3301,7 +3344,7 @@
             rankedScore.o += 1;
           }
           triggerWinScoreEffect();
-          triggerEquippedWinAnimation();
+          usedEffect = triggerEquippedWinAnimation();
           shouldMeteorShatter = meteorWin || frostWin || blackHoleWin;
           if (!blackHoleWin) {
             playWinCheer();
@@ -3319,6 +3362,9 @@
         if (rankedScore.x >= rankedTargetWins || rankedScore.o >= rankedTargetWins) {
           gameStarted = false;
           const iWonMatch = (myMark === 'X' ? rankedScore.x : rankedScore.o) > (myMark === 'X' ? rankedScore.o : rankedScore.x);
+          if (mode === 'online' && youWonRound) {
+            broadcastOnlineWinEffect(usedEffect, false);
+          }
           recordRankedLeaderboardResult(iWonMatch);
           applyRankedEloResult(iWonMatch ? 1 : 0);
           const yourWins = myMark === 'X' ? rankedScore.x : rankedScore.o;
@@ -3328,6 +3374,13 @@
           return;
         }
 
+        if (mode === 'online' && youWonRound) {
+          broadcastOnlineWinEffect(usedEffect, true);
+        }
+        if (mode === 'online' && !youWonRound) {
+          scheduleOnlineLossRestartFallback(false, getWinEffectRestartDelay());
+          return;
+        }
         if (blackHoleWin) {
           restartRoundWithoutFall(getWinEffectRestartDelay());
           return;
@@ -3349,6 +3402,7 @@
 
       const won = mode === 'online' ? result === myMark : result === 'X';
       let blackHoleWin = false;
+      let usedEffect = 'classic';
       if (mode === 'online') {
         recordMatchResult(result, won);
       }
@@ -3357,7 +3411,7 @@
         const frostWin = (shopState.equipped || 'classic') === 'frostnova';
         blackHoleWin = (shopState.equipped || 'classic') === 'blackhole';
         triggerWinScoreEffect();
-        triggerEquippedWinAnimation();
+        usedEffect = triggerEquippedWinAnimation();
         shouldMeteorShatter = meteorWin || frostWin || blackHoleWin;
         if (mode === 'online') {
           addLosun(10);
@@ -3367,6 +3421,9 @@
         }
         if (!blackHoleWin) {
           playWinCheer();
+        }
+        if (mode === 'online') {
+          broadcastOnlineWinEffect(usedEffect, true);
         }
         const restartDelay = shouldMeteorShatter ? getWinEffectRestartDelay() : 0;
         if (restartDelay > 0) {
@@ -3382,6 +3439,10 @@
       } else {
         updateStatus(mode === 'online' ? 'You lose!' : 'AI wins!');
         playLoseHonk();
+        if (mode === 'online') {
+          scheduleOnlineLossRestartFallback(false, 0);
+          return;
+        }
       }
 
       animatePiecesFallAndRestart();
@@ -3465,6 +3526,7 @@
     function resetBoard() {
       clearScoreEffect();
       clearBoardWinEffects();
+      clearRemoteLoseRestartTimer();
       shouldMeteorShatter = false;
       clearPendingAiMove();
       stopOnlineTurnTimer();
@@ -3490,6 +3552,7 @@
 
     function disconnectOnline() {
       stopOnlineTurnTimer();
+      clearRemoteLoseRestartTimer();
       if (conn) {
         try {
           conn.close();
@@ -3716,6 +3779,25 @@
             updateRankedScoreUi();
           }
           updateStatus(iWon ? 'Opponent forfeited from timeouts. You win!' : 'You forfeited from timeouts.');
+        } else if (msg.type === 'win-effect' && typeof msg.effect === 'string') {
+          clearRemoteLoseRestartTimer();
+          const remoteEffect = msg.effect;
+          triggerEquippedWinAnimation(remoteEffect, false);
+          const restartDelay = Number.isFinite(Number(msg.restartDelay))
+            ? Math.max(0, Math.floor(Number(msg.restartDelay)))
+            : getWinEffectRestartDelayForEffect(remoteEffect);
+          const useNoFall = Boolean(msg.noFall);
+          if (msg.followupRound) {
+            if (useNoFall) {
+              restartRoundWithoutFall(restartDelay);
+            } else if (restartDelay > 0) {
+              setTimeout(() => {
+                animatePiecesFallAndRestart();
+              }, restartDelay);
+            } else {
+              animatePiecesFallAndRestart();
+            }
+          }
         } else if (msg.type === 'chat' && typeof msg.text === 'string' && msg.text.trim()) {
           showChatFeed(`${opponentName}: ${msg.text.trim().slice(0, 40)}`);
         } else if (msg.type === 'ranked-elo-update' && Number.isFinite(Number(msg.elo))) {
