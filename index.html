@@ -387,19 +387,24 @@
       z-index: 7;
       opacity: 0;
       background:
-        linear-gradient(73deg, transparent 39%, rgba(47, 20, 8, 0.56) 40%, rgba(47, 20, 8, 0.2) 41%, transparent 42%),
-        linear-gradient(24deg, transparent 54%, rgba(47, 20, 8, 0.6) 55%, rgba(47, 20, 8, 0.18) 56%, transparent 57%),
-        linear-gradient(128deg, transparent 63%, rgba(47, 20, 8, 0.55) 64%, rgba(47, 20, 8, 0.16) 65%, transparent 66%);
+        linear-gradient(72deg, transparent 34.7%, rgba(36, 16, 8, 0.62) 35.1%, rgba(26, 10, 4, 0.84) 35.45%, rgba(53, 24, 12, 0.2) 35.9%, transparent 36.5%),
+        linear-gradient(18deg, transparent 52.2%, rgba(34, 14, 8, 0.56) 52.6%, rgba(22, 8, 4, 0.82) 53%, rgba(52, 22, 11, 0.2) 53.4%, transparent 53.9%),
+        linear-gradient(132deg, transparent 60.8%, rgba(33, 14, 7, 0.54) 61.3%, rgba(21, 8, 4, 0.78) 61.7%, rgba(52, 23, 11, 0.2) 62.1%, transparent 62.8%),
+        repeating-linear-gradient(118deg, transparent 0 26px, rgba(30, 12, 6, 0.24) 26px 27px, transparent 27px 43px),
+        repeating-linear-gradient(34deg, transparent 0 32px, rgba(37, 16, 8, 0.18) 32px 33px, transparent 33px 52px);
       mix-blend-mode: multiply;
+      filter: drop-shadow(0 1px 0 rgba(255, 223, 186, 0.24));
       animation: crack-reveal 520ms ease-out forwards;
     }
 
     .board.cracked::after {
       background:
-        radial-gradient(circle at 50% 66%, rgba(45, 16, 6, 0.55), transparent 36%),
-        linear-gradient(110deg, transparent 46%, rgba(45, 16, 6, 0.5) 47%, rgba(45, 16, 6, 0.14) 48%, transparent 49%),
-        linear-gradient(22deg, transparent 37%, rgba(45, 16, 6, 0.5) 38%, rgba(45, 16, 6, 0.14) 39%, transparent 40%);
+        radial-gradient(circle at 50% 66%, rgba(26, 10, 4, 0.66), rgba(48, 18, 9, 0.2) 22%, transparent 44%),
+        linear-gradient(108deg, transparent 43.4%, rgba(28, 10, 5, 0.64) 43.8%, rgba(67, 30, 16, 0.16) 44.2%, transparent 44.8%),
+        linear-gradient(26deg, transparent 35.4%, rgba(28, 10, 5, 0.62) 35.9%, rgba(67, 30, 16, 0.16) 36.2%, transparent 36.8%),
+        repeating-linear-gradient(96deg, transparent 0 34px, rgba(24, 8, 4, 0.14) 34px 35px, transparent 35px 58px);
       animation-delay: 120ms;
+      filter: blur(0.15px);
     }
 
     .cell {
