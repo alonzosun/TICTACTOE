@@ -323,40 +323,42 @@
       opacity: 0;
       transform: translateY(8px) scale(0.95);
       pointer-events: none;
+      transform-style: preserve-3d;
+      perspective: 700px;
     }
 
     .score-effect.active {
-      animation: score-pop 850ms cubic-bezier(0.22, 0.86, 0.31, 1.1) forwards;
+      animation: score-pop-3d 900ms cubic-bezier(0.2, 0.88, 0.28, 1.08) forwards;
     }
 
     .score-effect.score-classic {
       color: #4b2f1f;
-      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72), 0 8px 14px rgba(75, 47, 31, 0.26);
     }
 
     .score-effect.score-ember {
       color: #9a2a00;
-      text-shadow: 0 0 12px rgba(255, 126, 70, 0.6);
+      text-shadow: 0 0 12px rgba(255, 126, 70, 0.6), 0 10px 14px rgba(120, 39, 0, 0.32);
     }
 
     .score-effect.score-aurora {
       color: #265c9a;
-      text-shadow: 0 0 14px rgba(119, 169, 255, 0.72);
+      text-shadow: 0 0 14px rgba(119, 169, 255, 0.72), 0 10px 14px rgba(30, 82, 150, 0.32);
     }
 
     .score-effect.score-meteor {
       color: #7a4d00;
-      text-shadow: 0 0 14px rgba(255, 206, 89, 0.85);
+      text-shadow: 0 0 14px rgba(255, 206, 89, 0.85), 0 10px 16px rgba(122, 77, 0, 0.34);
     }
 
     .score-effect.score-frostnova {
       color: #2f5f88;
-      text-shadow: 0 0 16px rgba(146, 220, 255, 0.92);
+      text-shadow: 0 0 16px rgba(146, 220, 255, 0.92), 0 10px 16px rgba(47, 95, 136, 0.34);
     }
 
     .score-effect.score-blackhole {
       color: #191925;
-      text-shadow: 0 0 14px rgba(123, 123, 178, 0.72);
+      text-shadow: 0 0 14px rgba(123, 123, 178, 0.72), 0 12px 18px rgba(21, 21, 40, 0.42);
     }
 
     .board {
@@ -883,8 +885,8 @@
       position: absolute;
       left: -62px;
       right: -62px;
-      top: 37%;
-      bottom: 37%;
+      top: 45%;
+      bottom: 45%;
       border-radius: 50%;
       transform: rotate(-14deg);
       background:
@@ -902,8 +904,8 @@
       position: absolute;
       left: -96px;
       right: -96px;
-      top: 44%;
-      bottom: 44%;
+      top: 48.4%;
+      bottom: 48.4%;
       border-radius: 50%;
       transform: rotate(-14deg);
       background:
@@ -1317,22 +1319,22 @@
       }
     }
 
-    @keyframes score-pop {
+    @keyframes score-pop-3d {
       0% {
         opacity: 0;
-        transform: translateY(10px) scale(0.85);
+        transform: perspective(700px) translateY(18px) rotateX(68deg) rotateY(-14deg) translateZ(-24px) scale(0.74);
       }
-      24% {
+      28% {
         opacity: 1;
-        transform: translateY(-4px) scale(1.08);
+        transform: perspective(700px) translateY(-8px) rotateX(-14deg) rotateY(8deg) translateZ(16px) scale(1.16);
       }
       75% {
         opacity: 1;
-        transform: translateY(-2px) scale(1);
+        transform: perspective(700px) translateY(-2px) rotateX(0deg) rotateY(0deg) translateZ(0) scale(1);
       }
       100% {
         opacity: 0;
-        transform: translateY(-14px) scale(0.95);
+        transform: perspective(700px) translateY(-18px) rotateX(-8deg) rotateY(6deg) translateZ(10px) scale(0.92);
       }
     }
 
@@ -3244,6 +3246,25 @@
       }, restartAfter);
     }
 
+    function restartRoundWithoutFall(delayMs) {
+      setTimeout(() => {
+        resetBoard();
+        if (mode === 'online') {
+          onlineStarterAssigned = false;
+          if (isHost) {
+            assignRandomOnlineStarter(true);
+          } else {
+            updateTurnStatus();
+            setBoardDisabled(true);
+          }
+        } else {
+          player = 'X';
+          updateTurnStatus();
+          setBoardDisabled(false);
+        }
+      }, Math.max(0, delayMs));
+    }
+
     function endGame(result) {
       gameOver = true;
       setBoardDisabled(true);
@@ -3269,10 +3290,11 @@
         }
 
         const youWonRound = result === myMark;
+        let blackHoleWin = false;
         if (youWonRound) {
           const meteorWin = canTriggerMeteorNow();
           const frostWin = (shopState.equipped || 'classic') === 'frostnova';
-          const blackHoleWin = (shopState.equipped || 'classic') === 'blackhole';
+          blackHoleWin = (shopState.equipped || 'classic') === 'blackhole';
           if (result === 'X') {
             rankedScore.x += 1;
           } else {
@@ -3306,6 +3328,10 @@
           return;
         }
 
+        if (blackHoleWin) {
+          restartRoundWithoutFall(getWinEffectRestartDelay());
+          return;
+        }
         setTimeout(() => {
           animatePiecesFallAndRestart();
         }, shouldMeteorShatter ? getWinEffectRestartDelay() : 0);
@@ -3322,13 +3348,14 @@
       }
 
       const won = mode === 'online' ? result === myMark : result === 'X';
+      let blackHoleWin = false;
       if (mode === 'online') {
         recordMatchResult(result, won);
       }
       if (won) {
         const meteorWin = canTriggerMeteorNow();
         const frostWin = (shopState.equipped || 'classic') === 'frostnova';
-        const blackHoleWin = (shopState.equipped || 'classic') === 'blackhole';
+        blackHoleWin = (shopState.equipped || 'classic') === 'blackhole';
         triggerWinScoreEffect();
         triggerEquippedWinAnimation();
         shouldMeteorShatter = meteorWin || frostWin || blackHoleWin;
@@ -3343,9 +3370,13 @@
         }
         const restartDelay = shouldMeteorShatter ? getWinEffectRestartDelay() : 0;
         if (restartDelay > 0) {
-          setTimeout(() => {
-            animatePiecesFallAndRestart();
-          }, restartDelay);
+          if (blackHoleWin) {
+            restartRoundWithoutFall(restartDelay);
+          } else {
+            setTimeout(() => {
+              animatePiecesFallAndRestart();
+            }, restartDelay);
+          }
           return;
         }
       } else {
