@@ -565,11 +565,11 @@
 
     .board.effect-blackhole {
       box-shadow:
-        0 0 0 2px rgba(78, 72, 112, 0.46),
-        0 0 56px rgba(44, 30, 79, 0.7),
-        inset 0 2px 0 rgba(188, 176, 255, 0.18),
-        inset 0 -2px 0 rgba(22, 16, 45, 0.5),
-        0 10px 24px rgba(34, 22, 58, 0.48);
+        0 0 0 2px rgba(248, 127, 51, 0.36),
+        0 0 62px rgba(245, 105, 41, 0.42),
+        inset 0 2px 0 rgba(255, 171, 104, 0.22),
+        inset 0 -2px 0 rgba(18, 9, 31, 0.62),
+        0 10px 24px rgba(30, 16, 52, 0.54);
       animation: effect-blackhole 2800ms ease-out;
     }
 
@@ -863,29 +863,53 @@
       position: absolute;
       left: 50%;
       top: 54%;
-      width: 18px;
-      height: 18px;
+      width: 188px;
+      height: 188px;
       border-radius: 50%;
-      transform: translate(-50%, -50%) scale(0.2);
+      transform: translate(-50%, -50%) scale(0.22);
       pointer-events: none;
       z-index: 12;
       opacity: 0;
       background:
-        radial-gradient(circle at 50% 50%, #000 0 34%, rgba(27, 20, 48, 0.96) 60%, rgba(100, 77, 174, 0.6) 82%, rgba(171, 139, 255, 0.3) 95%);
+        radial-gradient(circle at 50% 50%, #000 0 38%, rgba(10, 8, 22, 0.98) 54%, rgba(33, 17, 52, 0.76) 70%, rgba(239, 112, 52, 0.12) 88%, rgba(255, 153, 84, 0) 100%);
       box-shadow:
-        0 0 42px rgba(107, 77, 206, 0.52),
-        0 0 84px rgba(55, 38, 102, 0.6);
-      animation: blackhole-grow 900ms ease-out forwards;
+        0 0 48px rgba(255, 120, 56, 0.45),
+        0 0 120px rgba(37, 16, 58, 0.82);
+      animation: blackhole-grow 1200ms ease-out forwards;
     }
 
     .blackhole-core::before {
       content: "";
       position: absolute;
-      inset: -18px;
+      left: -62px;
+      right: -62px;
+      top: 37%;
+      bottom: 37%;
       border-radius: 50%;
-      background: conic-gradient(from 20deg, rgba(180, 146, 255, 0.42), rgba(68, 49, 128, 0.15), rgba(190, 154, 255, 0.42), rgba(64, 46, 122, 0.15), rgba(180, 146, 255, 0.42));
-      filter: blur(1px);
-      animation: blackhole-spin 950ms linear infinite;
+      transform: rotate(-14deg);
+      background:
+        repeating-radial-gradient(ellipse at center, rgba(255, 251, 238, 0.95) 0 2px, rgba(255, 196, 137, 0.86) 2px 6px, rgba(255, 125, 58, 0.7) 6px 11px, rgba(119, 48, 22, 0.4) 11px 16px),
+        linear-gradient(90deg, rgba(255, 233, 190, 0.85), rgba(255, 129, 56, 0.78), rgba(255, 245, 226, 0.9));
+      filter: blur(0.7px);
+      box-shadow:
+        0 0 20px rgba(255, 146, 74, 0.6),
+        0 0 42px rgba(255, 95, 41, 0.45);
+      animation: blackhole-spin 2300ms linear infinite;
+    }
+
+    .blackhole-core::after {
+      content: "";
+      position: absolute;
+      left: -96px;
+      right: -96px;
+      top: 44%;
+      bottom: 44%;
+      border-radius: 50%;
+      transform: rotate(-14deg);
+      background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.7), rgba(255, 174, 110, 0.65), rgba(255, 114, 43, 0.58), rgba(255, 255, 255, 0.72));
+      filter: blur(1.1px);
+      opacity: 0.9;
     }
 
     .blackhole-vignette {
@@ -895,9 +919,27 @@
       z-index: 11;
       opacity: 0;
       background:
-        radial-gradient(circle at 50% 54%, transparent 12%, rgba(0, 0, 0, 0.48) 75%),
-        radial-gradient(circle at 50% 54%, rgba(146, 112, 255, 0.18), transparent 30%);
+        radial-gradient(circle at 50% 54%, transparent 10%, rgba(0, 0, 0, 0.56) 72%),
+        radial-gradient(circle at 38% 22%, rgba(126, 80, 227, 0.2), transparent 34%),
+        radial-gradient(circle at 72% 18%, rgba(245, 109, 46, 0.18), transparent 36%);
       animation: blackhole-vignette 2400ms ease-out forwards;
+    }
+
+    .blackhole-stars {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 10;
+      opacity: 0;
+      background:
+        radial-gradient(circle at 12% 18%, rgba(255, 255, 255, 0.85) 0 1px, transparent 1.4px),
+        radial-gradient(circle at 23% 36%, rgba(255, 235, 214, 0.65) 0 1px, transparent 1.4px),
+        radial-gradient(circle at 68% 22%, rgba(255, 255, 255, 0.82) 0 1px, transparent 1.5px),
+        radial-gradient(circle at 78% 36%, rgba(255, 196, 150, 0.6) 0 1px, transparent 1.6px),
+        radial-gradient(circle at 38% 76%, rgba(255, 255, 255, 0.65) 0 1px, transparent 1.5px),
+        radial-gradient(circle at 90% 70%, rgba(255, 210, 168, 0.55) 0 1px, transparent 1.7px),
+        linear-gradient(145deg, rgba(18, 10, 35, 0.64), rgba(40, 12, 38, 0.34), rgba(15, 8, 32, 0.68));
+      animation: blackhole-stars 2500ms ease-out forwards;
     }
 
     .cell.blackhole-suck {
@@ -1212,12 +1254,12 @@
         opacity: 0;
         transform: translate(-50%, -50%) scale(0.18);
       }
-      45% {
+      42% {
         opacity: 1;
       }
       100% {
         opacity: 1;
-        transform: translate(-50%, -50%) scale(3.9);
+        transform: translate(-50%, -50%) scale(1.06);
       }
     }
 
@@ -1230,6 +1272,13 @@
       0% { opacity: 0; }
       30% { opacity: 0.58; }
       80% { opacity: 0.68; }
+      100% { opacity: 0; }
+    }
+
+    @keyframes blackhole-stars {
+      0% { opacity: 0; }
+      28% { opacity: 0.72; }
+      82% { opacity: 0.76; }
       100% { opacity: 0; }
     }
 
@@ -2482,7 +2531,7 @@
 
     function clearBoardWinEffects() {
       boardElement.classList.remove('effect-classic', 'effect-ember', 'effect-aurora', 'effect-meteor', 'effect-frostnova', 'effect-blackhole', 'cracked', 'frost-cracked');
-      boardElement.querySelectorAll('.win-particle, .win-glint, .ember-spark, .smoke-puff, .aurora-ribbon, .aurora-star, .meteor, .meteor-impact, .mega-meteor, .impact-flash, .impact-wave, .frost-ring, .frost-shard, .frost-mist, .snowflake, .frost-glow, .frost-sheet, .blackhole-core, .blackhole-vignette').forEach((node) => node.remove());
+      boardElement.querySelectorAll('.win-particle, .win-glint, .ember-spark, .smoke-puff, .aurora-ribbon, .aurora-star, .meteor, .meteor-impact, .mega-meteor, .impact-flash, .impact-wave, .frost-ring, .frost-shard, .frost-mist, .snowflake, .frost-glow, .frost-sheet, .blackhole-core, .blackhole-vignette, .blackhole-stars').forEach((node) => node.remove());
       cells.forEach((cell) => {
         cell.classList.remove('blackhole-suck');
         cell.style.removeProperty('--to-x');
@@ -2683,6 +2732,10 @@
     }
 
     function spawnBlackHoleCore() {
+      const stars = document.createElement('span');
+      stars.className = 'blackhole-stars';
+      boardElement.appendChild(stars);
+
       const hole = document.createElement('span');
       hole.className = 'blackhole-core';
       boardElement.appendChild(hole);
